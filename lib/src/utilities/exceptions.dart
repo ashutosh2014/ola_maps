@@ -7,9 +7,9 @@ class ApiException implements Exception {
 }
 
 class BadRequestException extends ApiException {
-  BadRequestException(String message) : super(message);
+  BadRequestException(super.message);
 }
 
 class ServerException extends ApiException {
-  ServerException(String message) : super(message);
+  ServerException(super.message);
 }

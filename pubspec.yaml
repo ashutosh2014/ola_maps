@@ -1,7 +1,7 @@
 name: ola_maps
-description: "A new Flutter package project."
+description: "OLA Maps"
 version: 0.0.1
-homepage:
+homepage: https://github.com/ashutosh2014/ola_maps
 
 environment:
   sdk: ^3.5.3
