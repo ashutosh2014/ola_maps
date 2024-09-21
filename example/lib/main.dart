@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ola_maps/ola_maps.dart';
 
 void main() {
-  Olamaps.instance.initialize('YUCBZ4cDDpdTEwov513rxxxxxxxxxxxxxxxx');
+  Olamaps.instance.initialize('YUCBZ4cDDpdTEwov513rTsyymlbtjohM8Upv6xdM');
 
   runApp(const MyApp());
 }
@@ -97,6 +97,15 @@ class _MyHomePageState extends State<MyHomePage> {
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'GeoEncoder API',
+                style: TextStyle(
+                  fontSize: 24,
+                ),
+              ),
+            ),
             TextButton(
               onPressed: () async {
                 try {
@@ -110,7 +119,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   log("Error Occurred $ex $st");
                 }
               },
-              child: Text('Test Geoencode'),
+              child: const Text('Test Geoencode'),
             ),
             TextButton(
               onPressed: () async {
@@ -125,8 +134,106 @@ class _MyHomePageState extends State<MyHomePage> {
                   log("Error Occurred $ex $st");
                 }
               },
-              child: Text('Test Reverse Geoencode'),
-            )
+              child: const Text('Test Reverse Geoencode'),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'Places API',
+                style: TextStyle(
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  var result =
+                      await Olamaps.instance.places.getAutocompleteSuggestions(
+                    input: 'kempe',
+                    // location: Location(
+                    //     lng: 77.5526110768168, lat: 12.923946516889448),
+                  );
+                  for (var address in result) {
+                    log("AutoComplete Results:: ${address.toJson()}");
+                  }
+                } catch (ex, st) {
+                  log("Error Occurred $ex $st");
+                }
+              },
+              child: const Text('Test AutoComplete Results'),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  var result = await Olamaps.instance.places.getTextPredictions(
+                    location: Location(
+                        lng: 77.5526110768168, lat: 12.923946516889448),
+                    types: ['Cafes'],
+                    input: 'Cafes in Koramangala',
+                  );
+                  for (var address in result) {
+                    log("Cafe:: ${address.toJson()}");
+                  }
+                } catch (ex, st) {
+                  log("Error Occurred $ex $st");
+                }
+              },
+              child: const Text('Test Text Seach'),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  var result = await Olamaps.instance.places.getPlaceDetails(
+                      placeId: 'ola-platform:a79ed32419962a11a588ea92b83ca78e');
+                  log("RESULT>>>> $result");
+                } catch (ex, st) {
+                  log("Error Occurred $ex $st");
+                }
+              },
+              child: const Text('Test Place Details'),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  var result =
+                      await Olamaps.instance.places.getNearBySearchPlaces(
+                    location: Location(
+                        lng: 77.5526110768168, lat: 12.923946516889448),
+                    layers: ['venue'],
+                    types: ['restaurant'],
+                  );
+                  for (var address in result) {
+                    log("Near By Place:: ${address.toJson()}");
+                  }
+                } catch (ex, st) {
+                  log("Error Occurred $ex $st");
+                }
+              },
+              child: const Text('Test Near By Places'),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'AutoComplete SeachField',
+                style: TextStyle(
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 54,
+              width: 356,
+              child: OlaMapsAutocomplete(
+                hintText: 'Search for location',
+                decoration: const CustomDropdownDecoration(
+                    closedFillColor: Colors.transparent,
+                    hintStyle: TextStyle(fontSize: 12, color: Colors.black)),
+                onChanged: (value) {
+                  log((value?.toJson()).toString());
+                },
+              ),
+            ),
           ],
         ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
