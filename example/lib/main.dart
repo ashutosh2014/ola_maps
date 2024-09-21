@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:ola_maps/ola_maps.dart';
 
 void main() {
-  Olamaps.instance.initialize('YUCBZ4cDDpdTEwov513rTsyymlbtjohM8Upv6xdM');
+  Olamaps.instance.initialize('YUCBZ4cDDpdTEwov513rxxxxxxxxxxxx');
 
   runApp(const MyApp());
 }
