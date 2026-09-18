@@ -27,14 +27,27 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
+def ola_maps_swift_package_manager_enabled?
+  plugins_file = File.expand_path('../.flutter-plugins-dependencies', __dir__)
+  return false unless File.exist?(plugins_file)
+
+  require 'json'
+  JSON.parse(File.read(plugins_file)).dig('swift_package_manager_enabled', 'ios') == true
+end
+
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
-  # Ola Maps iOS SDK is git-hosted (not on CocoaPods trunk).
-  pod 'OlaMapCore', :git => 'https://github.com/ola-maps/ios-map-sdk.git', :tag => '1.0.8'
+  # CocoaPods-only apps still need the complete OlaMapCore spec. With Flutter
+  # 3.44+ SwiftPM, ola_maps embeds those xcframeworks itself — installing both
+  # would duplicate MoEngage/MapLibre and break device launch.
+  unless ola_maps_swift_package_manager_enabled?
+    require File.join(File.dirname(File.realpath(__FILE__)), '.symlinks/plugins/ola_maps/ios/ola_maps_ios_sdk.rb')
+    install_ola_maps_ios_sdk!
+  end
 
   target 'RunnerTests' do
     inherit! :search_paths

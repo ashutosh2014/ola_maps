@@ -9,8 +9,10 @@ Flutter plugin wrapping the Ola Maps SDKs (Android Map SDK + iOS OlaMapCore / Ol
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'ola_maps' => 'support@olamaps.io' }
   s.source           = { :path => '.' }
-  s.source_files     = 'Classes/**/*'
+  s.source_files     = 'ola_maps/Sources/ola_maps/**/*.swift'
   s.dependency 'Flutter'
+  # Use the plugin's complete OlaMapCore.podspec (see ola_maps_ios_sdk.rb).
+  # The git-hosted 1.0.8 spec omits MoEngageCards and related frameworks.
   s.dependency 'OlaMapCore'
   s.platform = :ios, '15.0'
   s.pod_target_xcconfig = {
@@ -19,6 +21,6 @@ Flutter plugin wrapping the Ola Maps SDKs (Android Map SDK + iOS OlaMapCore / Ol
   }
   s.swift_version = '5.0'
   s.resource_bundles = {
-    'ola_maps_privacy' => ['Resources/PrivacyInfo.xcprivacy']
+    'ola_maps_privacy' => ['ola_maps/Sources/ola_maps/PrivacyInfo.xcprivacy']
   }
 end

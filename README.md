@@ -224,7 +224,13 @@ dependencies {
 
 Minimum iOS **15.0** (Flutter engine) / Ola Maps SDK **13.0**, Xcode 12+. The map is `OlaMapService` from [OlaMapCore](https://github.com/ola-maps/ios-map-sdk) (same initializer as the Navigation SDK docs: api key, tile URL, project id).
 
-1. In the app `ios/Podfile`:
+1. Flutter **3.44+** uses Swift Package Manager by default. `ola_maps` ships `ios/ola_maps/Package.swift` and embeds every OlaMapCore xcframework (including `MoEngageCards`). The xcframeworks are not committed; on first resolve `Package.swift` downloads them, or you can run:
+
+   ```bash
+   ./ios/download_olamap_sdk.sh
+   ```
+
+   CocoaPods-only apps (SwiftPM disabled) still need the complete OlaMapCore spec in `ios/Podfile`. The example app installs it automatically when SwiftPM is off:
 
 ```ruby
 platform :ios, '15.0'
@@ -234,8 +240,10 @@ target 'Runner' do
   use_modular_headers!
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
-  # Not published on CocoaPods trunk — pin the git source.
-  pod 'OlaMapCore', :git => 'https://github.com/ola-maps/ios-map-sdk.git', :tag => '1.0.8'
+  # Only if Swift Package Manager is disabled:
+  require File.join(File.dirname(File.realpath(__FILE__)),
+                    '.symlinks/plugins/ola_maps/ios/ola_maps_ios_sdk.rb')
+  install_ola_maps_ios_sdk!
 end
 
 post_install do |installer|
@@ -250,7 +258,7 @@ end
 
 Then `cd ios && pod install`.
 
-Alternatively, download the xcframeworks from the SDK release, add them to the Xcode project, and **Embed & Sign** every framework under General → Frameworks, Libraries, and Embedded Content.
+Alternatively, download the xcframeworks from the SDK release and **Embed & Sign every framework** under General → Frameworks, Libraries, and Embedded Content — including `MoEngageCards`, `MoEngageInApps`, and `MoEngageTriggerEvaluator`.
 
 2. Location keys in `ios/Runner/Info.plist`:
 

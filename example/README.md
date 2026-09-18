@@ -16,7 +16,7 @@ flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_PROJE
 
 Android `minSdk` is 24. The Ola Maps AAR lives at `android/app/libs/OlaMapSdk-1.8.4.aar`.
 
-iOS requires 15.0+. The example `Podfile` pulls `OlaMapCore` from git. Location permission strings are in `ios/Runner/Info.plist`.
+iOS requires 15.0+. The plugin uses Swift Package Manager (`ios/ola_maps/Package.swift`) and embeds every OlaMapCore xcframework, including MoEngageCards. Location permission strings are in `ios/Runner/Info.plist`.
 
 Web loads `olamaps-web-sdk` from UNPKG in `web/index.html`. Run with `-d chrome`.
 
