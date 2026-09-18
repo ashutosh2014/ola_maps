@@ -241,7 +241,7 @@ class _MyAppState extends State<MyApp> {
               apiKey: kOlaMapsApiKey,
               initialCameraPosition: kOlaCampus,
               initialZoom: 14,
-              onMapError: (error) => _setStatus('Map error: $error'),
+              onMapError: _setStatus,
               onControllerReady: (controller) {
                 setState(() => _controller = controller);
                 controller.onMapClick = (pos) {

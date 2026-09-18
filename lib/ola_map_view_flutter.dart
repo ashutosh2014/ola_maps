@@ -76,12 +76,34 @@ class OlaLineType {
   static const dotted = 'LINE_DOTTED';
 }
 
+bool isOlaMapsApiKeyConfigured(String apiKey) {
+  final key = apiKey.trim();
+  if (key.isEmpty) return false;
+  return key != 'YOUR_API_KEY' && key != 'YOUR_OLA_MAPS_API_KEY' && key != '<API KEY>';
+}
+
+String formatOlaMapError(Object error) {
+  final raw = error is PlatformException
+      ? (error.message ?? error.code)
+      : error.toString();
+  if (raw.contains('403')) {
+    return 'Ola Maps rejected the style request (HTTP 403). '
+        'Use a real API key from https://maps.olakrutrim.com/ and run:\n'
+        'flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY';
+  }
+  if (raw.contains('401')) {
+    return 'Ola Maps authentication failed (HTTP 401). Check the API key.';
+  }
+  return raw;
+}
+
 class OlaMapController {
   final int id;
   final MethodChannel _channel;
   final EventChannel _cameraChannel;
   StreamSubscription? _cameraSub;
   final Completer<void> _ready = Completer<void>();
+  Object? _loadError;
 
   void Function(OlaLatLng position)? onCameraIdle;
   void Function(OlaLatLng position)? onMapClick;
@@ -113,10 +135,9 @@ class OlaMapController {
         break;
       case 'onMapError':
         final error = call.arguments?.toString() ?? 'Unknown map error';
-        if (!_ready.isCompleted) {
-          _ready.completeError(error);
-        }
-        onMapError?.call(error);
+        _loadError = error;
+        if (!_ready.isCompleted) _ready.complete();
+        onMapError?.call(formatOlaMapError(error));
         break;
       case 'onMapClick':
         final args = call.arguments;
@@ -137,9 +158,21 @@ class OlaMapController {
   }
 
   Future<void> waitUntilReady() async {
-    if (_ready.isCompleted) return;
-    await _channel.invokeMethod('waitUntilMapReady');
-    if (!_ready.isCompleted) _ready.complete();
+    if (_loadError != null) {
+      throw formatOlaMapError(_loadError!);
+    }
+    if (!_ready.isCompleted) {
+      try {
+        await _channel.invokeMethod('waitUntilMapReady');
+      } on PlatformException catch (e) {
+        _loadError = e;
+        throw formatOlaMapError(e);
+      }
+      if (!_ready.isCompleted) _ready.complete();
+    }
+    if (_loadError != null) {
+      throw formatOlaMapError(_loadError!);
+    }
   }
 
   void dispose() {
@@ -734,6 +767,7 @@ class OlaMapView extends StatefulWidget {
 
 class _OlaMapViewState extends State<OlaMapView> {
   OlaMapController? _controller;
+  String? _loadError;
 
   static const String _viewType = 'ola_map_view_flutter';
 
@@ -741,6 +775,17 @@ class _OlaMapViewState extends State<OlaMapView> {
   void dispose() {
     _controller?.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (!isOlaMapsApiKeyConfigured(widget.apiKey)) {
+      _loadError = formatOlaMapError('HTTP status code 403');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onMapError?.call(_loadError!);
+      });
+    }
   }
 
   Map<String, dynamic> get _creationParams => <String, dynamic>{
@@ -770,20 +815,41 @@ class _OlaMapViewState extends State<OlaMapView> {
       widget.onMapCreated?.call(id);
       widget.onControllerReady?.call(controller);
     } catch (e) {
-      debugPrint('OlaMap failed to load: $e');
-      widget.onMapError?.call(e.toString());
+      final message = formatOlaMapError(e);
+      debugPrint('OlaMap failed to load: $message');
+      if (mounted) {
+        setState(() => _loadError = message);
+      }
+      widget.onMapError?.call(message);
     }
+  }
+
+  Widget _errorPane(String message) {
+    return ColoredBox(
+      color: const Color(0xFFF6F6F6),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 15, height: 1.4),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     if (defaultTargetPlatform != TargetPlatform.android) {
-      return Center(
-        child: Text(
-          '${defaultTargetPlatform.name} is not yet supported by the Ola Maps plugin',
-          textAlign: TextAlign.center,
-        ),
+      return _errorPane(
+        '${defaultTargetPlatform.name} is not yet supported by the Ola Maps plugin',
       );
+    }
+
+    if (_loadError != null) {
+      return _errorPane(_loadError!);
     }
 
     return PlatformViewLink(
