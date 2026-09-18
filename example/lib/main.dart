@@ -2,40 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:ola_maps/ola_maps.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'demo_data.dart';
+
 const String kOlaMapsApiKey = String.fromEnvironment(
   'OLA_MAPS_API_KEY',
   defaultValue: 'YOUR_API_KEY',
 );
 
-const OlaLatLng kOlaCampus = OlaLatLng(18.52145653681468, 73.93178277572254);
-
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Ola Maps Example',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF222222),
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF111111),
+          foregroundColor: Colors.white,
+        ),
+      ),
+      home: const OlaMapsDemoPage(),
+    );
+  }
 }
 
-class _MyAppState extends State<MyApp> {
+class OlaMapsDemoPage extends StatefulWidget {
+  const OlaMapsDemoPage({super.key});
+
+  @override
+  State<OlaMapsDemoPage> createState() => _OlaMapsDemoPageState();
+}
+
+class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
   OlaMapController? _controller;
   late final OlaRoutingService _routingService;
 
-  String? _lastMarkerId;
-  String? _lastPolylineId;
-  String? _lastCircleId;
-  String? _lastPolygonId;
-  String? _lastBezierCurveId;
-  String? _lastClusterId;
-  String? _status;
+  String _status = isOlaMapsApiKeyConfigured(kOlaMapsApiKey)
+      ? 'Loading Pune demo scene…'
+      : 'Pass --dart-define=OLA_MAPS_API_KEY=YOUR_KEY';
 
-  static const double _storeLat = 18.76029027465273;
-  static const double _storeLng = 73.3814242364375;
-  static const double _orderLat = 18.73354223011708;
-  static const double _orderLng = 73.44587966939002;
+  DemoPlace? _selectedPlace;
+  OlaLatLng? _lastTap;
+
+  final List<String> _placeMarkerIds = [];
+  String? _zoneId;
+  String? _coverageId;
+  String? _tripLineId;
+  String? _curveId;
+  String? _clusterId;
+  String? _routeId;
+  String? _droppedPinId;
+
+  bool get _mapReady => _controller != null;
 
   @override
   void initState() {
@@ -45,355 +74,363 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _setStatus(String message) {
+    if (!mounted) return;
     setState(() => _status = message);
     debugPrint(message);
   }
 
-  Future<void> _addMarker() async {
-    final markerId = await _controller?.addMarker(
-      position: kOlaCampus,
+  Future<void> _onMapReady(OlaMapController controller) async {
+    setState(() => _controller = controller);
+    controller.onMapClick = _onMapTap;
+    controller.onMarkerClick = (id) {
+      DemoPlace? place;
+      for (final item in OlaMapsDemoData.places) {
+        if (item.id == id) {
+          place = item;
+          break;
+        }
+      }
+      setState(() => _selectedPlace = place);
+      controller.showInfoWindow(id);
+      _setStatus(place?.title ?? 'Marker $id');
+    };
+    await _showPlaces();
+    _setStatus('Pune demo ready · tap the map or a layer below');
+  }
+
+  Future<void> _onMapTap(OlaLatLng position) async {
+    setState(() => _lastTap = position);
+    if (_droppedPinId != null) {
+      await _controller?.removeMarker(_droppedPinId!);
+    }
+    final id = await _controller?.addMarker(
+      markerId: 'dropped_pin',
+      position: position,
+      snippet: 'Dropped pin',
+      subSnippet:
+          '${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}',
       isClickable: true,
-      snippet: 'Ola Campus',
-      subSnippet: 'Pune',
     );
-    setState(() => _lastMarkerId = markerId);
-    _setStatus('Marker added: $markerId');
+    setState(() => _droppedPinId = id);
+    _setStatus(
+      'Pin ${position.latitude.toStringAsFixed(5)}, ${position.longitude.toStringAsFixed(5)}',
+    );
   }
 
-  Future<void> _removeMarker() async {
-    final id = _lastMarkerId;
-    if (id == null) return;
-    await _controller?.removeMarker(id);
-    setState(() => _lastMarkerId = null);
-    _setStatus('Marker removed');
+  Future<void> _showPlaces() async {
+    if (_controller == null) return;
+    await _clearPlaceMarkers();
+    for (final place in OlaMapsDemoData.places) {
+      final id = await _controller!.addMarker(
+        markerId: place.id,
+        position: place.position,
+        snippet: place.title,
+        subSnippet: place.subtitle,
+        isClickable: true,
+      );
+      if (id != null) _placeMarkerIds.add(id);
+    }
+    await _controller!.zoomToLocation(
+      OlaMapsDemoData.mapCenter,
+      OlaMapsDemoData.mapZoom,
+    );
+    setState(() {});
+    _setStatus('${OlaMapsDemoData.places.length} Pune places');
   }
 
-  Future<void> _addPolyline() async {
-    final polylineId = await _controller?.addPolyline(
-      points: const [
-        OlaLatLng(18.52145653681468, 73.93178277572254),
-        OlaLatLng(18.52345653681468, 73.93378277572254),
-        OlaLatLng(18.52545653681468, 73.93578277572254),
-      ],
-      color: '#FF0000',
-      width: 5,
+  Future<void> _clearPlaceMarkers() async {
+    for (final id in _placeMarkerIds) {
+      await _controller?.removeMarker(id);
+    }
+    _placeMarkerIds.clear();
+  }
+
+  Future<void> _toggleDeliveryZone() async {
+    if (_controller == null) return;
+    if (_zoneId != null) {
+      await _controller!.removePolygon(_zoneId!);
+      setState(() => _zoneId = null);
+      _setStatus('Delivery zone hidden');
+      return;
+    }
+    final id = await _controller!.addPolygon(
+      polygonId: 'magarpatta_zone',
+      points: OlaMapsDemoData.deliveryZone,
+      color: '#4CAF50',
+      borderColor: '#1B8F3A',
+      borderWidth: 3,
+    );
+    setState(() => _zoneId = id);
+    await _controller!.zoomToLocation(OlaMapsDemoData.headquarters.position, 14.5);
+    _setStatus('Magarpatta delivery zone');
+  }
+
+  Future<void> _toggleCoverage() async {
+    if (_controller == null) return;
+    if (_coverageId != null) {
+      await _controller!.removeCircle(_coverageId!);
+      setState(() => _coverageId = null);
+      _setStatus('Coverage hidden');
+      return;
+    }
+    final id = await _controller!.addCircle(
+      circleId: 'hq_coverage',
+      center: OlaMapsDemoData.coverageCenter,
+      radius: OlaMapsDemoData.coverageRadiusMeters,
+      color: '#2196F3',
+      opacity: 0.25,
+      borderColor: '#1565C0',
+      borderWidth: 2,
+    );
+    setState(() => _coverageId = id);
+    await _controller!.zoomToLocation(OlaMapsDemoData.coverageCenter, 13.2);
+    _setStatus('1.8 km HQ coverage');
+  }
+
+  Future<void> _toggleTripLine() async {
+    if (_controller == null) return;
+    if (_tripLineId != null) {
+      await _controller!.removePolyline(_tripLineId!);
+      setState(() => _tripLineId = null);
+      _setStatus('Trip path hidden');
+      return;
+    }
+    final id = await _controller!.addPolyline(
+      polylineId: 'hq_to_mall',
+      points: OlaMapsDemoData.sampleTrip,
+      color: '#111111',
+      width: 6,
       lineType: OlaLineType.solid,
     );
-    setState(() => _lastPolylineId = polylineId);
-    _setStatus('Polyline added: $polylineId');
+    setState(() => _tripLineId = id);
+    await _controller!.zoomToLocation(const OlaLatLng(18.5418, 73.9240), 13.2);
+    _setStatus('HQ → Phoenix Mall path');
   }
 
-  Future<void> _removePolyline() async {
-    final id = _lastPolylineId;
-    if (id == null) return;
-    await _controller?.removePolyline(id);
-    setState(() => _lastPolylineId = null);
-    _setStatus('Polyline removed');
-  }
-
-  Future<void> _addCircle() async {
-    final circleId = await _controller?.addCircle(
-      center: kOlaCampus,
-      radius: 500,
-      color: '#0000FF',
-      opacity: 0.3,
-      borderColor: '#0000FF',
-      borderWidth: 2,
-    );
-    setState(() => _lastCircleId = circleId);
-    _setStatus('Circle added: $circleId');
-  }
-
-  Future<void> _removeCircle() async {
-    final id = _lastCircleId;
-    if (id == null) return;
-    await _controller?.removeCircle(id);
-    setState(() => _lastCircleId = null);
-    _setStatus('Circle removed');
-  }
-
-  Future<void> _addPolygon() async {
-    final polygonId = await _controller?.addPolygon(
-      points: const [
-        OlaLatLng(18.52145653681468, 73.93178277572254),
-        OlaLatLng(18.52345653681468, 73.93378277572254),
-        OlaLatLng(18.52545653681468, 73.93578277572254),
-        OlaLatLng(18.52545653681468, 73.93178277572254),
-      ],
-      color: '#00FF00',
-      borderColor: '#006600',
-      borderWidth: 2,
-    );
-    setState(() => _lastPolygonId = polygonId);
-    _setStatus('Polygon added: $polygonId');
-  }
-
-  Future<void> _removePolygon() async {
-    final id = _lastPolygonId;
-    if (id == null) return;
-    await _controller?.removePolygon(id);
-    setState(() => _lastPolygonId = null);
-    _setStatus('Polygon removed');
-  }
-
-  Future<void> _addBezierCurve() async {
-    final curveId = await _controller?.addBezierCurve(
-      startPoint: kOlaCampus,
-      endPoint: const OlaLatLng(18.52545653681468, 73.93578277572254),
-      color: '#FF00FF',
+  Future<void> _toggleBezier() async {
+    if (_controller == null) return;
+    if (_curveId != null) {
+      await _controller!.removeBezierCurve(_curveId!);
+      setState(() => _curveId = null);
+      _setStatus('Flight curve hidden');
+      return;
+    }
+    final id = await _controller!.addBezierCurve(
+      curveId: 'pickup_to_drop',
+      startPoint: OlaMapsDemoData.pickup.position,
+      endPoint: OlaMapsDemoData.drop.position,
+      color: '#E53935',
       width: 4,
       lineType: OlaLineType.solid,
     );
-    setState(() => _lastBezierCurveId = curveId);
-    _setStatus('Bezier curve added: $curveId');
+    setState(() => _curveId = id);
+    await _controller!.zoomToLocation(const OlaLatLng(18.5490, 73.9050), 13);
+    _setStatus('Mall → Koregaon Park curve');
   }
 
-  Future<void> _removeBezierCurve() async {
-    final id = _lastBezierCurveId;
-    if (id == null) return;
-    await _controller?.removeBezierCurve(id);
-    setState(() => _lastBezierCurveId = null);
-    _setStatus('Bezier curve removed');
-  }
-
-  Future<void> _addClusters() async {
-    final clusterId = await _controller?.addClusteredMarkersFromPoints(
-      points: const [
-        OlaLatLng(18.5214, 73.9317),
-        OlaLatLng(18.5220, 73.9325),
-        OlaLatLng(18.5235, 73.9338),
-        OlaLatLng(18.5248, 73.9349),
-        OlaLatLng(18.5260, 73.9360),
-        OlaLatLng(18.5180, 73.9280),
-        OlaLatLng(18.5195, 73.9295),
-      ],
-      clusterRadius: 50,
-      defaultMarkerColor: '#FF0000',
-      defaultClusterColor: '#00AA00',
-      textColor: '#FFFFFF',
-      textSize: 12,
-    );
-    setState(() => _lastClusterId = clusterId);
-    _setStatus('Clusters added: $clusterId');
-  }
-
-  Future<void> _removeClusters() async {
-    final id = _lastClusterId;
-    if (id == null) return;
-    await _controller?.removeClusteredMarkers(id);
-    setState(() => _lastClusterId = null);
-    _setStatus('Clusters removed');
-  }
-
-  Future<void> _drawRoute() async {
+  Future<void> _toggleClusters() async {
     if (_controller == null) return;
-    _setStatus('Fetching route...');
+    if (_clusterId != null) {
+      await _controller!.removeClusteredMarkers(_clusterId!);
+      setState(() => _clusterId = null);
+      _setStatus('Dark stores hidden');
+      return;
+    }
+    final id = await _controller!.addClusteredMarkersFromPoints(
+      points: OlaMapsDemoData.nearbyStores,
+      clusterRadius: 60,
+      defaultMarkerColor: '#111111',
+      defaultClusterColor: '#FBC02D',
+      textColor: '#111111',
+      textSize: 13,
+    );
+    setState(() => _clusterId = id);
+    await _controller!.zoomToLocation(OlaMapsDemoData.headquarters.position, 13.8);
+    _setStatus('${OlaMapsDemoData.nearbyStores.length} nearby dark stores');
+  }
+
+  Future<void> _drawLiveRoute() async {
+    if (_controller == null) return;
+    _setStatus('Fetching driving directions…');
     try {
+      final origin = OlaMapsDemoData.pickup.position;
+      final dest = OlaMapsDemoData.drop.position;
       final routePoints = await _routingService.getDirections(
-        originLat: _storeLat,
-        originLng: _storeLng,
-        destLat: _orderLat,
-        destLng: _orderLng,
+        originLat: origin.latitude,
+        originLng: origin.longitude,
+        destLat: dest.latitude,
+        destLng: dest.longitude,
       );
       final olaPoints = routePoints
           .map((point) => OlaLatLng(point['lat']!, point['lng']!))
           .toList();
-
-      if (_lastPolylineId != null) {
-        await _controller!.removePolyline(_lastPolylineId!);
+      if (_routeId != null) {
+        await _controller!.removePolyline(_routeId!);
       }
-
-      final polylineId = await _controller!.addPolyline(
+      final id = await _controller!.addPolyline(
+        polylineId: 'live_route',
         points: olaPoints,
-        color: '#0000FF',
-        width: 5,
-      );
-      await _controller!.addMarker(
-        position: const OlaLatLng(_storeLat, _storeLng),
-        snippet: 'Store',
-      );
-      await _controller!.addMarker(
-        position: const OlaLatLng(_orderLat, _orderLng),
-        snippet: 'Order',
+        color: '#1565C0',
+        width: 7,
+        lineType: OlaLineType.solid,
       );
       await _controller!.zoomToLocation(
-        OlaLatLng((_storeLat + _orderLat) / 2, (_storeLng + _orderLng) / 2),
-        12,
+        OlaLatLng(
+          (origin.latitude + dest.latitude) / 2,
+          (origin.longitude + dest.longitude) / 2,
+        ),
+        12.5,
       );
-      setState(() => _lastPolylineId = polylineId);
-      _setStatus('Route drawn (${olaPoints.length} points)');
+      setState(() => _routeId = id);
+      _setStatus('Route Phoenix Mall → Koregaon Park (${olaPoints.length} pts)');
     } catch (e) {
       _setStatus('Route error: $e');
     }
   }
 
+  Future<void> _goToMyLocation() async {
+    await _controller?.showCurrentLocation();
+    final location = await _controller?.getCurrentLocation();
+    if (location == null) {
+      _setStatus('Location unavailable');
+      return;
+    }
+    await _controller!.zoomToLocation(location, 16);
+    _setStatus('Your location');
+  }
+
+  Future<void> _resetScene() async {
+    if (_controller == null) return;
+    if (_zoneId != null) await _controller!.removePolygon(_zoneId!);
+    if (_coverageId != null) await _controller!.removeCircle(_coverageId!);
+    if (_tripLineId != null) await _controller!.removePolyline(_tripLineId!);
+    if (_curveId != null) await _controller!.removeBezierCurve(_curveId!);
+    if (_clusterId != null) await _controller!.removeClusteredMarkers(_clusterId!);
+    if (_routeId != null) await _controller!.removePolyline(_routeId!);
+    if (_droppedPinId != null) await _controller!.removeMarker(_droppedPinId!);
+    setState(() {
+      _zoneId = null;
+      _coverageId = null;
+      _tripLineId = null;
+      _curveId = null;
+      _clusterId = null;
+      _routeId = null;
+      _droppedPinId = null;
+      _selectedPlace = null;
+      _lastTap = null;
+    });
+    await _showPlaces();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Ola Maps Example',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Ola Maps Example'),
-        ),
-        body: Stack(
-          children: [
-            OlaMapView(
-              apiKey: kOlaMapsApiKey,
-              initialCameraPosition: kOlaCampus,
-              initialZoom: 14,
-              onMapError: _setStatus,
-              onControllerReady: (controller) {
-                setState(() => _controller = controller);
-                controller.onMapClick = (pos) {
-                  _setStatus(
-                    'Tap ${pos.latitude.toStringAsFixed(5)}, ${pos.longitude.toStringAsFixed(5)}',
-                  );
-                };
-                controller.onMarkerClick = (id) {
-                  _setStatus('Marker tapped: $id');
-                  controller.showInfoWindow(id);
-                };
-                _setStatus('Map ready');
-              },
+    final selected = _selectedPlace;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ola Maps Example'),
+        actions: [
+          IconButton(
+            tooltip: 'Reset scene',
+            onPressed: _mapReady ? _resetScene : null,
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          OlaMapView(
+            apiKey: kOlaMapsApiKey,
+            initialCameraPosition: OlaMapsDemoData.mapCenter,
+            initialZoom: OlaMapsDemoData.mapZoom,
+            onMapError: _setStatus,
+            onControllerReady: _onMapReady,
+          ),
+          Positioned(
+            top: 12,
+            left: 12,
+            right: 12,
+            child: _StatusCard(
+              status: _status,
+              selectedPlace: selected,
+              lastTap: _lastTap,
             ),
-            Positioned(
-              top: 12,
-              left: 12,
-              right: 12,
-              child: Material(
-                elevation: 2,
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(
-                    _status ??
-                        (kOlaMapsApiKey == 'YOUR_API_KEY'
-                            ? 'Pass --dart-define=OLA_MAPS_API_KEY=...'
-                            : 'Loading map...'),
-                  ),
+          ),
+          Positioned(
+            right: 12,
+            bottom: 12,
+            child: Column(
+              children: [
+                _RoundButton(
+                  icon: Icons.add,
+                  onPressed: _mapReady ? () => _controller!.zoomIn() : null,
                 ),
-              ),
+                const SizedBox(height: 8),
+                _RoundButton(
+                  icon: Icons.remove,
+                  onPressed: _mapReady ? () => _controller!.zoomOut() : null,
+                ),
+                const SizedBox(height: 8),
+                _RoundButton(
+                  icon: Icons.my_location,
+                  onPressed: _mapReady ? _goToMyLocation : null,
+                ),
+              ],
             ),
-            Positioned(
-              left: 12,
-              bottom: 96,
-              child: Column(
-                children: [
-                  FloatingActionButton.small(
-                    heroTag: 'zoom_in',
-                    onPressed: _controller == null
-                        ? null
-                        : () => _controller!.zoomIn(),
-                    child: const Icon(Icons.add),
-                  ),
-                  const SizedBox(height: 8),
-                  FloatingActionButton.small(
-                    heroTag: 'zoom_out',
-                    onPressed: _controller == null
-                        ? null
-                        : () => _controller!.zoomOut(),
-                    child: const Icon(Icons.remove),
-                  ),
-                  const SizedBox(height: 8),
-                  FloatingActionButton.small(
-                    heroTag: 'my_location',
-                    onPressed: _controller == null
-                        ? null
-                        : () async {
-                            await _controller!.showCurrentLocation();
-                            final location =
-                                await _controller!.getCurrentLocation();
-                            if (location != null) {
-                              await _controller!.zoomToLocation(location, 16);
-                              _setStatus('Current location');
-                            } else {
-                              _setStatus('Location unavailable');
-                            }
-                          },
-                    child: const Icon(Icons.my_location),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        bottomNavigationBar: Material(
-          elevation: 8,
-          child: SafeArea(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              child: Row(
-                children: [
-                  _ActionChip(
-                    label: 'Marker',
-                    icon: Icons.add_location,
-                    onPressed: _controller == null ? null : _addMarker,
-                  ),
-                  _ActionChip(
-                    label: 'Remove',
-                    icon: Icons.remove_circle,
-                    onPressed: _lastMarkerId == null ? null : _removeMarker,
-                  ),
-                  _ActionChip(
-                    label: 'Line',
-                    icon: Icons.timeline,
-                    onPressed: _controller == null ? null : _addPolyline,
-                  ),
-                  _ActionChip(
-                    label: 'Clear line',
-                    icon: Icons.clear,
-                    onPressed: _lastPolylineId == null ? null : _removePolyline,
-                  ),
-                  _ActionChip(
-                    label: 'Circle',
-                    icon: Icons.circle_outlined,
-                    onPressed: _controller == null ? null : _addCircle,
-                  ),
-                  _ActionChip(
-                    label: 'Clear circle',
-                    icon: Icons.cancel_outlined,
-                    onPressed: _lastCircleId == null ? null : _removeCircle,
-                  ),
-                  _ActionChip(
-                    label: 'Polygon',
-                    icon: Icons.hexagon_outlined,
-                    onPressed: _controller == null ? null : _addPolygon,
-                  ),
-                  _ActionChip(
-                    label: 'Clear polygon',
-                    icon: Icons.delete_outline,
-                    onPressed: _lastPolygonId == null ? null : _removePolygon,
-                  ),
-                  _ActionChip(
-                    label: 'Bezier',
-                    icon: Icons.show_chart,
-                    onPressed: _controller == null ? null : _addBezierCurve,
-                  ),
-                  _ActionChip(
-                    label: 'Clear bezier',
-                    icon: Icons.close,
-                    onPressed:
-                        _lastBezierCurveId == null ? null : _removeBezierCurve,
-                  ),
-                  _ActionChip(
-                    label: 'Cluster',
-                    icon: Icons.bubble_chart,
-                    onPressed: _controller == null ? null : _addClusters,
-                  ),
-                  _ActionChip(
-                    label: 'Clear cluster',
-                    icon: Icons.blur_off,
-                    onPressed: _lastClusterId == null ? null : _removeClusters,
-                  ),
-                  _ActionChip(
-                    label: 'Route',
-                    icon: Icons.route,
-                    onPressed: _controller == null ? null : _drawRoute,
-                  ),
-                ],
-              ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Material(
+        elevation: 10,
+        color: Colors.white,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+            child: Row(
+              children: [
+                _LayerChip(
+                  label: 'Places',
+                  icon: Icons.place,
+                  selected: _placeMarkerIds.isNotEmpty,
+                  onPressed: _mapReady ? _showPlaces : null,
+                ),
+                _LayerChip(
+                  label: 'Zone',
+                  icon: Icons.hexagon_outlined,
+                  selected: _zoneId != null,
+                  onPressed: _mapReady ? _toggleDeliveryZone : null,
+                ),
+                _LayerChip(
+                  label: 'Coverage',
+                  icon: Icons.radar,
+                  selected: _coverageId != null,
+                  onPressed: _mapReady ? _toggleCoverage : null,
+                ),
+                _LayerChip(
+                  label: 'Trip',
+                  icon: Icons.alt_route,
+                  selected: _tripLineId != null,
+                  onPressed: _mapReady ? _toggleTripLine : null,
+                ),
+                _LayerChip(
+                  label: 'Curve',
+                  icon: Icons.trending_flat,
+                  selected: _curveId != null,
+                  onPressed: _mapReady ? _toggleBezier : null,
+                ),
+                _LayerChip(
+                  label: 'Stores',
+                  icon: Icons.bubble_chart,
+                  selected: _clusterId != null,
+                  onPressed: _mapReady ? _toggleClusters : null,
+                ),
+                _LayerChip(
+                  label: 'Directions',
+                  icon: Icons.navigation,
+                  selected: _routeId != null,
+                  onPressed: _mapReady ? _drawLiveRoute : null,
+                ),
+              ],
             ),
           ),
         ),
@@ -402,14 +439,67 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-class _ActionChip extends StatelessWidget {
+class _StatusCard extends StatelessWidget {
+  final String status;
+  final DemoPlace? selectedPlace;
+  final OlaLatLng? lastTap;
+
+  const _StatusCard({
+    required this.status,
+    required this.selectedPlace,
+    required this.lastTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      elevation: 3,
+      borderRadius: BorderRadius.circular(14),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              selectedPlace?.title ?? 'Ola Maps · Pune demo',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              selectedPlace?.subtitle ?? status,
+              style: TextStyle(color: Colors.grey.shade700, height: 1.3),
+            ),
+            if (lastTap != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Last tap  ${lastTap!.latitude.toStringAsFixed(5)}, ${lastTap!.longitude.toStringAsFixed(5)}',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LayerChip extends StatelessWidget {
   final String label;
   final IconData icon;
+  final bool selected;
   final VoidCallback? onPressed;
 
-  const _ActionChip({
+  const _LayerChip({
     required this.label,
     required this.icon,
+    required this.selected,
     this.onPressed,
   });
 
@@ -417,11 +507,32 @@ class _ActionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: ActionChip(
+      child: FilterChip(
+        selected: selected,
         avatar: Icon(icon, size: 18),
         label: Text(label),
-        onPressed: onPressed,
+        onSelected: onPressed == null ? null : (_) => onPressed!(),
+        selectedColor: const Color(0xFFFBC02D),
+        checkmarkColor: Colors.black,
       ),
+    );
+  }
+}
+
+class _RoundButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  const _RoundButton({required this.icon, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.small(
+      heroTag: icon.codePoint.toString(),
+      onPressed: onPressed,
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black87,
+      child: Icon(icon),
     );
   }
 }

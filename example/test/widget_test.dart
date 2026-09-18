@@ -5,5 +5,7 @@ void main() {
   testWidgets('Shows example app bar', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
     expect(find.text('Ola Maps Example'), findsOneWidget);
+    expect(find.text('Places'), findsOneWidget);
+    expect(find.text('Coverage'), findsOneWidget);
   });
 }
