@@ -1,3 +1,7 @@
+## 0.3.1
+
+* Show example app screenshots in the README using Markdown images so they render on [pub.dev](https://pub.dev/packages/ola_maps).
+
 ## 0.3.0
 
 * Added Flutter **web** `OlaMapView` via [Ola Maps Web SDK v2](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup) (`olamaps-web-sdk`), including markers, popups, events/controls, geolocation, 3D tiles, and GeoJSON overlays.

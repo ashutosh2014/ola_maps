@@ -19,10 +19,9 @@ iOS maps use `OlaMapService` (api key, tile URL, project id). Native iOS overlay
 
 ## Screenshots
 
-<p align="center">
-  <img src="screenshots/demo_directions.jpg" width="45%" alt="Example app with a directions polyline, markers, and location search" />
-  <img src="screenshots/demo_search.jpg" width="45%" alt="Example app after searching a location and dropping a pin with coverage" />
-</p>
+| Directions | Search |
+| --- | --- |
+| ![Directions polyline, markers, and location search](screenshots/demo_directions.jpg) | ![Location search pin with coverage circle](screenshots/demo_search.jpg) |
 
 ## Use in an app
 
