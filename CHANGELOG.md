@@ -1,3 +1,7 @@
+## 0.3.3
+
+* Use absolute GitHub image URLs in the README so screenshots render on pub.dev (relative paths are stripped until repository verification finishes).
+
 ## 0.3.2
 
 * Use absolute GitHub image URLs in the README so screenshots render on pub.dev (relative paths are stripped until repository verification finishes).
