@@ -1,5 +1,6 @@
 ## 0.3.0
 
+* Added multilingual `language` support (12 ISO 639-1 codes) across Places, Routing, Geocoding, Static Maps, and iOS Dynamic Maps.
 * Completed Flutter Android Map SDK integration against Ola Maps SDK 1.8.4.
 * Added iOS `OlaMapView` via `OlaMapService` (api key, tile URL, project id), location Info.plist keys, and CocoaPods `OlaMapCore`.
 * Added HTTP clients for Roads, Places (advanced details/nearby, address validation, photos), Geofencing, Elevation, Tiles, Street View, distance matrix, route optimizer, and fleet planner.

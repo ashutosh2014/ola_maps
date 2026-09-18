@@ -35,18 +35,19 @@ class OlaMapsPlaces {
     double? radius,
     List<String> types = const [],
     int size = 5,
+    Object? language,
     String? requestId,
     String? correlationId,
   }) async {
     final json = await _http.getJson(
       '/places/v1/textsearch',
-      query: {
+      query: _http.withLanguage({
         'input': input,
         if (location != null) 'location': location.toString(),
         if (radius != null) 'radius': radius,
         if (types.isNotEmpty) 'types': types.join(','),
         'size': size,
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -67,17 +68,16 @@ class OlaMapsPlaces {
   /// Returns a [PlaceDetails] object containing the details of the specified place.
   Future<PlaceDetails> getPlaceDetails({
     required String placeId,
-    String? language,
+    Object? language,
     bool advanced = false,
     String? requestId,
     String? correlationId,
   }) async {
     final json = await _http.getJson(
       advanced ? '/places/v1/details/advanced' : '/places/v1/details',
-      query: {
+      query: _http.withLanguage({
         'place_id': placeId,
-        if (language != null) 'language': language,
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -91,7 +91,7 @@ class OlaMapsPlaces {
 
   Future<PlaceDetails> getAdvancedPlaceDetails({
     required String placeId,
-    String? language,
+    Object? language,
     String? requestId,
     String? correlationId,
   }) {
@@ -125,7 +125,7 @@ class OlaMapsPlaces {
     bool strictBounds = false,
     bool withCentroid = false,
     int limit = 5,
-    String? language,
+    Object? language,
     String rankBy = 'popular',
     bool advanced = false,
     String? requestId,
@@ -135,7 +135,7 @@ class OlaMapsPlaces {
       advanced
           ? '/places/v1/nearbysearch/advanced'
           : '/places/v1/nearbysearch',
-      query: {
+      query: _http.withLanguage({
         'location': location.toString(),
         if (layers.isNotEmpty) 'layers': layers.join(','),
         if (types.isNotEmpty) 'types': types.join(','),
@@ -143,9 +143,8 @@ class OlaMapsPlaces {
         'strictbounds': strictBounds,
         'withCentroid': withCentroid,
         'limit': limit,
-        if (language != null) 'language': language,
         'rankBy': rankBy,
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -165,7 +164,7 @@ class OlaMapsPlaces {
     int radius = 6000,
     bool withCentroid = false,
     int limit = 5,
-    String? language,
+    Object? language,
     String rankBy = 'popular',
     String? requestId,
     String? correlationId,
@@ -200,21 +199,20 @@ class OlaMapsPlaces {
     Location? location,
     int? radius,
     bool? strictBounds,
-    String? language,
+    Object? language,
     List<String> types = const [],
     String? requestId,
     String? correlationId,
   }) async {
     final json = await _http.getJson(
       '/places/v1/autocomplete',
-      query: {
+      query: _http.withLanguage({
         'input': input,
         if (location != null) 'location': location.toString(),
         if (radius != null) 'radius': radius,
         if (strictBounds != null) 'strictbounds': strictBounds,
-        if (language != null) 'language': language,
         if (types.isNotEmpty) 'types': types.join(','),
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );

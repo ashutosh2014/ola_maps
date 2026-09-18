@@ -21,11 +21,19 @@ const String kOlaMapsTileUrl = String.fromEnvironment(
   defaultValue: kOlaMapsDefaultTileUrl,
 );
 
+const String kOlaMapsLanguage = String.fromEnvironment(
+  'OLA_MAPS_LANGUAGE',
+  defaultValue: 'en',
+);
+
 enum PinRole { drop, origin, destination }
 
 void main() {
   if (isOlaMapsApiKeyConfigured(kOlaMapsApiKey)) {
-    Olamaps.instance.initialize(kOlaMapsApiKey);
+    Olamaps.instance.initialize(
+      kOlaMapsApiKey,
+      language: kOlaMapsLanguage,
+    );
   }
   runApp(const MyApp());
 }
@@ -708,6 +716,7 @@ class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
           OlaMapView(
             apiKey: kOlaMapsApiKey,
             tileUrl: kOlaMapsTileUrl,
+            language: kOlaMapsLanguage,
             projectId: kOlaMapsProjectId,
             initialCameraPosition: OlaMapsDemoData.mapCenter,
             initialZoom: OlaMapsDemoData.mapZoom,

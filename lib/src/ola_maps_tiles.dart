@@ -1,16 +1,43 @@
 import 'dart:typed_data';
 
 import 'package:ola_maps/src/ola_maps_http.dart';
+import 'package:ola_maps/src/utilities/ola_maps_language.dart';
 import 'package:ola_maps/src/utilities/rest_models.dart';
 
 class OlaMapsTiles {
-  static const lightStandard = 'default-light-standard';
-  static const darkStandard = 'default-dark-standard';
+  static const lightStandard = OlaMapsLanguage.lightStandardStyle;
+  static const darkStandard = OlaMapsLanguage.darkStandardStyle;
 
   OlaMapsTiles({required String apiKey, OlaMapsHttp? http})
       : _http = http ?? OlaMapsHttp(apiKey: apiKey);
 
   final OlaMapsHttp _http;
+
+  /// Vector style JSON URL for Dynamic Maps. Non-English languages use
+  /// `default-light-standard-{code}` (e.g. `default-light-standard-ml`).
+  String styleUrl({
+    Object? language,
+    bool dark = false,
+    String? baseStyle,
+  }) {
+    return OlaMapsLanguage.dynamicMapStyleUrl(
+      language: language ?? _http.defaultLanguage,
+      dark: dark,
+      baseStyle: baseStyle,
+    );
+  }
+
+  String styleName({
+    Object? language,
+    bool dark = false,
+    String? baseStyle,
+  }) {
+    return OlaMapsLanguage.mapStyleName(
+      language: language ?? _http.defaultLanguage,
+      dark: dark,
+      baseStyle: baseStyle,
+    );
+  }
 
   Future<List<MapStyleInfo>> listStyles({
     String? requestId,
@@ -36,14 +63,24 @@ class OlaMapsTiles {
     int height = 600,
     String format = 'png',
     String styleName = lightStandard,
+    Object? language,
+    bool dark = false,
     List<StaticMapMarker> markers = const [],
     String? path,
     String? requestId,
     String? correlationId,
   }) {
+    final style = this.styleName(
+      language: language,
+      dark: dark,
+      baseStyle: styleName,
+    );
     return _http.getBytes(
-      '/tiles/v1/styles/$styleName/static/$longitude,$latitude,$zoom/${width}x$height.$format',
-      query: _overlayQuery(markers, path),
+      '/tiles/v1/styles/$style/static/$longitude,$latitude,$zoom/${width}x$height.$format',
+      query: _http.withLanguage(
+        _overlayQuery(markers, path) ?? <String, dynamic>{},
+        language: language,
+      ),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -58,14 +95,24 @@ class OlaMapsTiles {
     int height = 600,
     String format = 'png',
     String styleName = lightStandard,
+    Object? language,
+    bool dark = false,
     List<StaticMapMarker> markers = const [],
     String? path,
     String? requestId,
     String? correlationId,
   }) {
+    final style = this.styleName(
+      language: language,
+      dark: dark,
+      baseStyle: styleName,
+    );
     return _http.getBytes(
-      '/tiles/v1/styles/$styleName/static/$minLongitude,$minLatitude,$maxLongitude,$maxLatitude/${width}x$height.$format',
-      query: _overlayQuery(markers, path),
+      '/tiles/v1/styles/$style/static/$minLongitude,$minLatitude,$maxLongitude,$maxLatitude/${width}x$height.$format',
+      query: _http.withLanguage(
+        _overlayQuery(markers, path) ?? <String, dynamic>{},
+        language: language,
+      ),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -77,16 +124,23 @@ class OlaMapsTiles {
     int height = 600,
     String format = 'png',
     String styleName = lightStandard,
+    Object? language,
+    bool dark = false,
     List<StaticMapMarker> markers = const [],
     String? requestId,
     String? correlationId,
   }) {
+    final style = this.styleName(
+      language: language,
+      dark: dark,
+      baseStyle: styleName,
+    );
     return _http.getBytes(
-      '/tiles/v1/styles/$styleName/static/auto/${width}x$height.$format',
-      query: {
+      '/tiles/v1/styles/$style/static/auto/${width}x$height.$format',
+      query: _http.withLanguage({
         'path': path,
         ...?_overlayQuery(markers, null),
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );

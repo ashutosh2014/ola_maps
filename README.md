@@ -13,6 +13,7 @@ Wraps [Ola Maps Android SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk)
 - Location: show / hide current location
 - Routing helper (`OlaRoutingService`) plus distance matrix, route optimizer, fleet planner
 - HTTP APIs: Places, Geocode, Roads, Geofencing, Elevation, Tiles, Street View (`Olamaps.instance`)
+- Multilingual names, addresses, and turn-by-turn instructions in 12 languages (`language` / [OlaMapsLanguage])
 
 iOS maps use `OlaMapService` (api key, tile URL, project id). Native iOS overlay APIs differ slightly from Android (annotations vs markers; bezier/clustering are approximated).
 
@@ -30,6 +31,7 @@ import 'package:ola_maps/ola_maps.dart';
 OlaMapView(
   apiKey: 'YOUR_OLA_MAPS_API_KEY',
   tileUrl: kOlaMapsDefaultTileUrl,
+  language: OlaMapsLanguage.hi, // iOS Dynamic Maps: default-light-standard-hi
   projectId: 'YOUR_PROJECT_ID', // iOS OlaMapService; from the Ola Maps dashboard
   initialCameraPosition: const OlaLatLng(18.5214, 73.9317),
   initialZoom: 14,
@@ -101,12 +103,21 @@ await controller.addClusteredMarkersFromPoints(
 Initialize once with your dashboard API key, then call Places, Geocode, Roads, Geofencing, Elevation, Tiles, Street View, and Routing.
 
 ```dart
-Olamaps.instance.initialize('YOUR_OLA_MAPS_API_KEY');
+Olamaps.instance.initialize(
+  'YOUR_OLA_MAPS_API_KEY',
+  language: OlaMapsLanguage.hi, // or 'hi'
+);
 
 final maps = Olamaps.instance;
 
-final suggestions = await maps.places.getAutocompleteSuggestions(input: 'Koramangala');
-final details = await maps.places.getPlaceDetails(placeId: suggestions.first.placeId);
+final suggestions = await maps.places.getAutocompleteSuggestions(
+  input: 'रेस्टोरेंट',
+  language: OlaMapsLanguage.hi,
+);
+final details = await maps.places.getPlaceDetails(
+  placeId: suggestions.first.placeId,
+  language: OlaMapsLanguage.ta,
+);
 final advanced = await maps.places.getAdvancedPlaceDetails(placeId: details.placeId);
 final nearby = await maps.places.getNearBySearchPlaces(
   location: Location(lat: 12.9315, lng: 77.6164),
@@ -117,6 +128,7 @@ await maps.places.getPhoto('photo_reference');
 
 final addresses = await maps.geoencoder.fetchAddresses(
   Location(lat: 12.9313, lng: 77.6165),
+  language: OlaMapsLanguage.bn,
 );
 final geocoded = await maps.geoencoder.fetchLocation('Mumbai');
 
@@ -139,13 +151,42 @@ final png = await maps.tiles.staticMapByCenter(
   longitude: 77.61,
   latitude: 12.93,
   zoom: 15,
+  language: OlaMapsLanguage.ml,
 );
 await maps.streetView.nearestImageId(latitude: 12.9345, longitude: 77.6136);
 
+await maps.routing.getDirectionsRaw(
+  origin: Location(lat: 12.9716, lng: 77.5946),
+  destination: Location(lat: 13.0827, lng: 80.2707),
+  language: OlaMapsLanguage.kn,
+);
 await maps.routing.getDistanceMatrix(
   origins: [Location(lat: 12.93, lng: 77.61)],
   destinations: [Location(lat: 12.97, lng: 77.59)],
 );
+```
+
+### Multilingual support
+
+Pass `language` as an ISO 639-1 code or [OlaMapsLanguage] (`en`, `hi`, `kn`, `te`, `ta`, `ml`, `sa`, `bn`, `gu`, `mr`, `or`, `ur`). Omitted values default to English (`en`).
+
+| API | Where `language` is sent |
+| --- | --- |
+| Places (Autocomplete, Details, Nearby, Text Search) | GET query |
+| Routing (Directions, Directions Basic, Distance Matrix) | GET/POST query |
+| Route Optimizer / Fleet Planner | POST body |
+| Reverse / forward Geocoding | GET query |
+| Static Maps | Localized style id (`default-light-standard-ml`) plus query |
+| Dynamic Maps (`OlaMapView` / `tiles.styleUrl`) | Style URL, e.g. `.../styles/default-light-standard-ml/style.json` |
+
+Per-call `language` overrides `Olamaps.instance.initialize(..., language:)`. Some landmarks or technical terms may still appear in English.
+
+```dart
+await maps.places.getAutocompleteSuggestions(
+  input: 'रेस्टोरेंट',
+  language: 'hi',
+);
+print(maps.tiles.styleUrl(language: 'ml'));
 ```
 
 ## Android setup (required once per app)
@@ -220,9 +261,13 @@ Alternatively, download the xcframeworks from the SDK release, add them to the X
 <string>App wants to access your location</string>
 ```
 
-3. Pass `projectId` (dashboard project / workspace id) and optionally `tileUrl` / `userId` into `OlaMapView`. Default tiles:
+3. Pass `projectId` (dashboard project / workspace id) and optionally `tileUrl` / `userId` / `language` into `OlaMapView`. Default English tiles:
 
 `https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json`
+
+Malayalam (and other non-English) labels use `default-light-standard-{code}`:
+
+`https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard-ml/style.json`
 
 Turn-by-turn navigation (`OlaMapNavigationService`) is a separate [Navigation SDK](https://github.com/ola-maps/ios-navigation-sdk) and is not wrapped by `OlaMapView`.
 
@@ -230,7 +275,7 @@ Turn-by-turn navigation (`OlaMapNavigationService`) is a separate [Navigation SD
 
 ```bash
 cd example
-flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_PROJECT_ID=YOUR_PROJECT_ID
+flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_PROJECT_ID=YOUR_PROJECT_ID --dart-define=OLA_MAPS_LANGUAGE=hi
 ```
 
 The example demos markers, polylines, circles, polygons, bezier curves, clustering, routing, and current location.

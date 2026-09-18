@@ -20,7 +20,9 @@ class OlaRoutingService {
     String mode = 'driving',
     bool alternatives = false,
     bool steps = false,
+    Object? language,
   }) async {
+    final lang = _http.resolvedLanguage(language);
     final url = Uri.parse(
       'https://api.olamaps.io/routing/v1/directions'
       '?origin=$originLat,$originLng'
@@ -29,6 +31,7 @@ class OlaRoutingService {
       '&alternatives=$alternatives'
       '&steps=$steps'
       '&overview=full'
+      '${lang != null ? '&language=$lang' : ''}'
       '&api_key=$apiKey',
     );
 
@@ -128,20 +131,21 @@ class OlaRoutingService {
     bool steps = false,
     String overview = 'full',
     bool basic = false,
+    Object? language,
     String? requestId,
     String? correlationId,
   }) async {
     final json = await _http.sendJson(
       'POST',
       basic ? '/routing/v1/directions/basic' : '/routing/v1/directions',
-      query: {
+      query: _http.withLanguage({
         'origin': origin.toString(),
         'destination': destination.toString(),
         'mode': mode,
         'alternatives': alternatives,
         'steps': steps,
         'overview': overview,
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -153,6 +157,7 @@ class OlaRoutingService {
     required List<Location> destinations,
     String mode = 'driving',
     bool basic = false,
+    Object? language,
     String? requestId,
     String? correlationId,
   }) async {
@@ -160,11 +165,11 @@ class OlaRoutingService {
       basic
           ? '/routing/v1/distanceMatrix/basic'
           : '/routing/v1/distanceMatrix',
-      query: {
+      query: _http.withLanguage({
         'origins': OlaMapsHttp.encodePoints(origins),
         'destinations': OlaMapsHttp.encodePoints(destinations),
         'mode': mode,
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -173,13 +178,14 @@ class OlaRoutingService {
 
   Future<Map<String, dynamic>> optimizeRoute(
     Map<String, dynamic> body, {
+    Object? language,
     String? requestId,
     String? correlationId,
   }) async {
     final json = await _http.sendJson(
       'POST',
       '/routing/v1/routeOptimizer',
-      body: body,
+      body: _http.withLanguageBody(body, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -188,13 +194,14 @@ class OlaRoutingService {
 
   Future<Map<String, dynamic>> planFleet(
     Map<String, dynamic> body, {
+    Object? language,
     String? requestId,
     String? correlationId,
   }) async {
     final json = await _http.sendJson(
       'POST',
       '/routing/v1/fleetPlanner',
-      body: body,
+      body: _http.withLanguageBody(body, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );

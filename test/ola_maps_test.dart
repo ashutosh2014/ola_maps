@@ -27,4 +27,34 @@ void main() {
     expect(isOlaMapsApiKeyConfigured('YOUR_API_KEY'), isFalse);
     expect(isOlaMapsApiKeyConfigured('abc123'), isTrue);
   });
+
+  test('OlaMapsLanguage maps ISO codes and dynamic map styles', () {
+    expect(OlaMapsLanguage.codeOf(null), 'en');
+    expect(OlaMapsLanguage.codeOf(OlaMapsLanguage.hi), 'hi');
+    expect(OlaMapsLanguage.codeOf('TA'), 'ta');
+    expect(OlaMapsLanguage.isSupported('ml'), isTrue);
+    expect(OlaMapsLanguage.mapStyleName(), 'default-light-standard');
+    expect(
+      OlaMapsLanguage.mapStyleName(language: OlaMapsLanguage.ml),
+      'default-light-standard-ml',
+    );
+    expect(
+      OlaMapsLanguage.dynamicMapStyleUrl(language: 'ml'),
+      'https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard-ml/style.json',
+    );
+    expect(
+      OlaMapsLanguage.resolveTileUrl(
+        kOlaMapsDefaultTileUrl,
+        language: 'hi',
+      ),
+      'https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard-hi/style.json',
+    );
+    expect(
+      OlaMapsLanguage.resolveTileUrl(
+        'https://example.com/custom.json',
+        language: 'hi',
+      ),
+      'https://example.com/custom.json',
+    );
+  });
 }

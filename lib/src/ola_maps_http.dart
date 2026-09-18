@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:ola_maps/src/utilities/exceptions.dart';
 import 'package:ola_maps/src/utilities/models.dart';
+import 'package:ola_maps/src/utilities/ola_maps_language.dart';
 
 /// Shared HTTP helper for Ola Maps REST APIs (`https://api.olamaps.io`).
 class OlaMapsHttp {
@@ -12,11 +13,13 @@ class OlaMapsHttp {
 
   final String apiKey;
   final String baseUrl;
+  final String? defaultLanguage;
   final http.Client _client;
 
   OlaMapsHttp({
     required this.apiKey,
     this.baseUrl = defaultBaseUrl,
+    this.defaultLanguage,
     http.Client? client,
   }) : _client = client ?? http.Client();
 
@@ -52,6 +55,33 @@ class OlaMapsHttp {
       }
     });
     return Uri.parse('$baseUrl$path').replace(queryParameters: params);
+  }
+
+  /// ISO 639-1 code for Places, Routing, Geocoding, and Maps. Per-call
+  /// [language] wins; otherwise [defaultLanguage] from [Olamaps.initialize].
+  String? resolvedLanguage([Object? language]) {
+    if (language != null) return OlaMapsLanguage.codeOf(language);
+    if (defaultLanguage == null || defaultLanguage!.trim().isEmpty) {
+      return null;
+    }
+    return OlaMapsLanguage.codeOf(defaultLanguage);
+  }
+
+  Map<String, dynamic> withLanguage(
+    Map<String, dynamic> query, {
+    Object? language,
+  }) {
+    final existing = query['language'];
+    final code = existing != null
+        ? OlaMapsLanguage.codeOf(existing)
+        : resolvedLanguage(language);
+    if (code != null) query['language'] = code;
+    return query;
+  }
+
+  Object? withLanguageBody(Object? body, {Object? language}) {
+    if (body is! Map) return body;
+    return withLanguage(Map<String, dynamic>.from(body), language: language);
   }
 
   Future<dynamic> getJson(

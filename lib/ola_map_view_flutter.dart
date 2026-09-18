@@ -6,8 +6,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:ola_maps/src/utilities/ola_maps_language.dart';
 
 export 'ola_routing_service.dart';
+export 'src/utilities/ola_maps_language.dart';
 
 /// Geographic coordinate used by the Ola Maps SDK.
 class OlaLatLng {
@@ -732,6 +734,9 @@ const String kOlaMapsDefaultTileUrl =
 class OlaMapView extends StatefulWidget {
   final String apiKey;
   final String tileUrl;
+  /// ISO 639-1 code or [OlaMapsLanguage]. iOS Dynamic Maps load
+  /// `default-light-standard-{code}` unless [tileUrl] is a custom style.
+  final Object? language;
   final String projectId;
   final String? userId;
   final void Function(int id)? onMapCreated;
@@ -753,6 +758,7 @@ class OlaMapView extends StatefulWidget {
     super.key,
     required this.apiKey,
     this.tileUrl = kOlaMapsDefaultTileUrl,
+    this.language,
     this.projectId = '',
     this.userId,
     this.onMapCreated,
@@ -800,7 +806,10 @@ class _OlaMapViewState extends State<OlaMapView> {
 
   Map<String, dynamic> get _creationParams => <String, dynamic>{
         'apiKey': widget.apiKey,
-        'tileUrl': widget.tileUrl,
+        'tileUrl': OlaMapsLanguage.resolveTileUrl(
+          widget.tileUrl,
+          language: widget.language,
+        ),
         'projectId': widget.projectId,
         'userId': widget.userId,
         'showZoomControls': widget.showZoomControls,

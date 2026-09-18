@@ -10,7 +10,7 @@ Android and iOS demo for the `ola_maps` Flutter plugin.
 Get an API key (and iOS project id) from [Ola Maps](https://maps.olakrutrim.com/), then:
 
 ```bash
-flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_PROJECT_ID=YOUR_PROJECT_ID
+flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_PROJECT_ID=YOUR_PROJECT_ID --dart-define=OLA_MAPS_LANGUAGE=hi
 ```
 
 Android `minSdk` is 24. The Ola Maps AAR lives at `android/app/libs/OlaMapSdk-1.8.4.aar`.

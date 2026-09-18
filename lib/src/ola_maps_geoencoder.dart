@@ -16,16 +16,15 @@ class OlamapsGeoencoder {
   /// Converts geographic coordinates into readable addresses or place names.
   Future<List<Address>> fetchAddresses(
     Location location, {
-    String? language,
+    Object? language,
     String? requestId,
     String? correlationId,
   }) async {
     final json = await _http.getJson(
       '/places/v1/reverse-geocode',
-      query: {
+      query: _http.withLanguage({
         'latlng': location.toString(),
-        if (language != null) 'language': language,
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );
@@ -41,16 +40,15 @@ class OlamapsGeoencoder {
   /// Retrieves geographic coordinates and detailed location information for a given address.
   Future<List<Address>> fetchLocation(
     String address, {
-    String language = 'en',
+    Object? language,
     String? requestId,
     String? correlationId,
   }) async {
     final json = await _http.getJson(
       '/places/v1/geocode',
-      query: {
+      query: _http.withLanguage({
         'address': address,
-        'language': language,
-      },
+      }, language: language),
       requestId: requestId,
       correlationId: correlationId,
     );

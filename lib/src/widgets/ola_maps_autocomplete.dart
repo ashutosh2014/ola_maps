@@ -32,7 +32,11 @@ class OlaMapsAutocomplete extends StatelessWidget {
     this.searchHintText,
     this.searchRequestLoadingIndicator,
     this.visibility,
+    this.language,
   });
+
+  /// Places Autocomplete `language` (ISO 639-1 or [OlaMapsLanguage]).
+  final Object? language;
 
   /// Scroll controller to access items list scroll behavior.
   final ScrollController? itemsScrollController;
@@ -177,6 +181,7 @@ class OlaMapsAutocomplete extends StatelessWidget {
           // } else if (apiType is AutoComplete) {
           return Olamaps.instance.places.getAutocompleteSuggestions(
             input: query,
+            language: language,
           );
         },
         onChanged: onChanged);
