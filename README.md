@@ -1,110 +1,144 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# ola_maps
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Flutter plugin for [Ola Maps](https://maps.olakrutrim.com/) — Android Map SDK view plus Places / Geocoder helpers.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
-
-# OLA Maps - Geocode API
-
-**Version:** 0.02 
-**OAS:** 3.0  
-**API Specification:** `/openapi/geocode-oas.yaml`
-
-The OLA Maps - Geocode API package provides a comprehensive suite of tools for geographic data, including functionalities for Forward and Reverse Geocoding, Routing, Roads, Places, and Map Tiles APIs.
+Wraps [Ola Maps Android SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk) as a Flutter `PlatformView`. Existing Places API helpers from this repo stay under `lib/ola_maps_api.dart`.
 
 ## Features
 
-- **Forward Geocode API:** Converts addresses or place names into geographic coordinates (latitude and longitude).
-- **Reverse Geocode API:** Converts geographic coordinates back into human-readable addresses or place names.
-- **Routing API:** Provides directions and route optimization between multiple locations.
-- **Roads API:** Retrieves information about road segments and calculates distance along roads.
-- **Places API:** Searches for and provides details about places of interest.
-- **Map Tiles API:** Retrieves map tiles for visual representation of geographic areas.
+- Interactive map (`OlaMapView`) — Android only
+- Markers, info windows, polylines, circles, polygons, bezier curves, clustering
+- Camera: `zoomToLocation`, `moveCamera`, `zoomIn` / `zoomOut`, `getCamera`, `onCameraIdle`
+- Map events: tap, long-press, marker tap, map error
+- Location: show / hide current location
+- Routing helper (`OlaRoutingService`)
+- HTTP Places / reverse-geocode (`Olamaps.instance`)
 
-## Getting Started
+## Use in an app
 
-To use this package, you'll need to set up your project and include your OLA Maps API key.
-
-1. **Add the dependency:**
-
-   Add `ola_maps` to your `pubspec.yaml` file:
-   ```yaml
-   dependencies:
-     ola_maps: ^0.0.2
-   ```
-
-2. **Import the package:**
-
-   In your Dart file, import the package:
-   ```dart
-   import 'package:ola_maps/ola_maps.dart';
-   ```
-
-### Initialization
-
-Initialize the OLA Maps instance with your API key before using any API:
-
-```dart
-void main() {
-  Olamaps.instance.initialize('YOUR_API_KEY_HERE');
-  runApp(const MyApp());
-}
+```yaml
+dependencies:
+  ola_maps:
+    path: ../ola_maps   # or a git / pub dependency
 ```
 
-### Example
-
-Here’s a complete example demonstrating how to use the Geocoding API with a Flutter application:
-
 ```dart
-import 'dart:developer';
-
-import 'package:flutter/material.dart';
 import 'package:ola_maps/ola_maps.dart';
 
-void main() {
-  Olamaps.instance.initialize('YOUR_API_KEY_HERE');
-  runApp(const MyApp());
+OlaMapView(
+  apiKey: 'YOUR_OLA_MAPS_API_KEY',
+  initialCameraPosition: const OlaLatLng(18.5214, 73.9317),
+  initialZoom: 14,
+  onControllerReady: (controller) {
+    controller.onCameraIdle = (pos) {
+      // map center after pan/zoom settles
+    };
+    controller.onMapClick = (pos) {
+      controller.addMarker(position: pos, snippet: 'Dropped pin');
+    };
+    controller.zoomToLocation(const OlaLatLng(28.6139, 77.2090), 15);
+  },
+)
+```
+
+### Overlays
+
+```dart
+await controller.addMarker(
+  position: const OlaLatLng(18.5214, 73.9317),
+  snippet: 'Ola Campus',
+);
+
+await controller.addPolyline(
+  points: const [
+    OlaLatLng(12.9314, 77.6164),
+    OlaLatLng(12.9317, 77.6143),
+  ],
+  color: '#FF0000',
+  width: 5,
+  lineType: OlaLineType.solid,
+);
+
+await controller.addCircle(
+  center: const OlaLatLng(12.9314, 77.6164),
+  radius: 100,
+  color: '#0000FF',
+  opacity: 0.3,
+);
+
+await controller.addPolygon(
+  points: const [
+    OlaLatLng(18.5689, 73.8808),
+    OlaLatLng(18.5896, 73.8361),
+    OlaLatLng(18.5906, 73.8361),
+  ],
+  color: '#00FF00',
+);
+
+await controller.addBezierCurve(
+  startPoint: const OlaLatLng(12.9314, 77.6164),
+  endPoint: const OlaLatLng(12.9317, 77.6143),
+  color: '#FF00FF',
+);
+
+await controller.addClusteredMarkersFromPoints(
+  points: const [
+    OlaLatLng(18.5214, 73.9317),
+    OlaLatLng(18.5220, 73.9325),
+  ],
+  clusterRadius: 50,
+  defaultMarkerColor: '#FF0000',
+  defaultClusterColor: '#00AA00',
+);
+```
+
+## Android setup (required once per app)
+
+AARs cannot be auto-bundled inside Flutter plugins, so the **app module** must depend on the SDK AAR (same as the official Android sample).
+
+1. Copy `android/libs/OlaMapSdk-1.8.4.aar` from this package into your app’s `android/app/libs/`.
+
+2. In `android/app/build.gradle` / `.kts`:
+
+```kotlin
+android {
+    defaultConfig {
+        minSdk = 24
+    }
 }
 
-// ... (MyApp and MyHomePage classes as shown in your example) ...
+dependencies {
+    implementation(files("libs/OlaMapSdk-1.8.4.aar"))
+    implementation("org.maplibre.gl:android-sdk:11.13.1")
+    implementation("org.maplibre.gl:android-plugin-annotation-v9:3.0.2")
+    implementation("org.maplibre.gl:android-plugin-markerview-v9:3.0.2")
+}
 ```
 
-### Additional APIs
+3. Permissions:
 
-- **Routing API:** Provides directions and route optimization between locations.
-- **Roads API:** Retrieves road segment information and calculates distance.
-- **Places API:** Searches and retrieves details about places.
-- **Map Tiles API:** Retrieves tiles for visual representation.
-
-Refer to the API documentation in `/openapi/geocode-oas.yaml` for more details on using these additional APIs.
-
-## Troubleshooting
-
-If you encounter a `500 Internal Server Error` when calling the APIs, please ensure:
-
-1. **API Key:** Your API key is valid and properly initialized.
-2. **Project Link:** Ensure your project is linked to an OLA Maps subscription. This can often resolve access issues.
-
-For detailed API documentation, see `/openapi/geocode-oas.yaml`.
-
-## Additional Information
-
-- **Documentation:** For detailed API documentation, see `/openapi/geocode-oas.yaml`.
-- **Example Project:** An example project demonstrating usage is included.
-- **Contributing:** Contributions are welcome! Please refer to the `CONTRIBUTING.md` file for guidelines.
-- **Issues:** To report issues or bugs, please use the [Issues tracker](#) on GitHub.
-
-Feel free to reach out for any questions or support.
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 ```
 
-### Key Changes:
-1. **Structured Initialization Section:** Added clarity to the API key initialization step.
-2. **Troubleshooting Section:** Included a clear explanation of the common error (500) and potential solutions.
-3. **Consistent Formatting:** Ensured the README follows a consistent style for improved readability.
+## Example app
+
+```bash
+cd example
+flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY
+```
+
+The example demos markers, polylines, circles, polygons, bezier curves, clustering, routing, and current location.
+
+## Requirements
+
+- Flutter SDK ≥ 3.3
+- Android `minSdk` ≥ 24
+- Ola Maps SDK **1.8.4**
+- **iOS**: map view not supported yet (Places HTTP APIs still work)
+
+## License
+
+MIT — see [LICENSE](LICENSE). Upstream map plugin: [imselmon/ola_maps_flutter](https://github.com/imselmon/ola_maps_flutter). Android SDK: [ola-maps/android-maps-sdk](https://github.com/ola-maps/android-maps-sdk).

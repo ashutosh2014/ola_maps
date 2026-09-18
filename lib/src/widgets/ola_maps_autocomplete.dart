@@ -1,7 +1,7 @@
-import 'package:flutter/widgets.dart';
-import 'package:ola_maps/ola_maps.dart';
-
-export 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:animated_custom_dropdown/custom_dropdown.dart';
+import 'package:flutter/material.dart';
+import 'package:ola_maps/ola_maps_api.dart';
+import 'package:ola_maps/src/utilities/auto_complete_results.dart';
 
 class OlaMapsAutocomplete extends StatelessWidget {
   const OlaMapsAutocomplete({

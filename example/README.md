@@ -1,16 +1,15 @@
-# example
+# ola_maps example
 
-A new Flutter project.
+Android demo for the `ola_maps` Flutter plugin wrapping [Ola Maps SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk).
 
-## Getting Started
+## Run
 
-This project is a starting point for a Flutter application.
+Get an API key from [Ola Maps](https://maps.olakrutrim.com/), then:
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+`minSdk` is 24. The Ola Maps AAR lives at `android/app/libs/OlaMapSdk-1.8.4.aar`.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The bottom toolbar adds/removes markers, polylines, circles, polygons, bezier curves, clusters, and a directions polyline.
