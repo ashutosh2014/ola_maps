@@ -1,16 +1,28 @@
-# example
+# ola_maps example
 
-A new Flutter project.
+Android, iOS, and web demo for the `ola_maps` Flutter plugin.
 
-## Getting Started
+- Android wraps [Ola Maps SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk).
+- iOS wraps [OlaMapCore / OlaMapService](https://github.com/ola-maps/ios-map-sdk) (api key, tile URL, project id).
+- Web wraps [Ola Maps Web SDK v2](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup) (`olamaps-web-sdk`).
 
-This project is a starting point for a Flutter application.
+## Run
 
-A few resources to get you started if this is your first Flutter project:
+Get an API key (and iOS project id) from [Ola Maps](https://maps.olakrutrim.com/), then:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_PROJECT_ID=YOUR_PROJECT_ID --dart-define=OLA_MAPS_LANGUAGE=hi
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Android `minSdk` is 24. The Ola Maps AAR lives at `android/app/libs/OlaMapSdk-1.8.4.aar`.
+
+iOS requires 15.0+. The plugin uses Swift Package Manager (`ios/ola_maps/Package.swift`) and embeds every OlaMapCore xcframework, including MoEngageCards. Location permission strings are in `ios/Runner/Info.plist`.
+
+Web loads `olamaps-web-sdk` from UNPKG in `web/index.html`. Run with `-d chrome`.
+
+The bottom toolbar adds/removes markers, polylines, circles, polygons, bezier curves, clusters, and a directions polyline.
+
+<p align="center">
+  <img src="../screenshots/demo_directions.jpg" width="45%" alt="Directions polyline, markers, and location search" />
+  <img src="../screenshots/demo_search.jpg" width="45%" alt="Location search pin with coverage circle" />
+</p>

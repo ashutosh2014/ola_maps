@@ -1,0 +1,65 @@
+group = "com.example.ola_maps_flutter"
+version = "1.0-SNAPSHOT"
+
+buildscript {
+    ext.kotlin_version = "2.2.20"
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.11.1")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+    namespace = "com.example.ola_maps_flutter"
+
+    compileSdk = 36
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_11
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+        test.java.srcDirs += "src/test/kotlin"
+    }
+
+    defaultConfig {
+        minSdk = 24
+    }
+
+    dependencies {
+        testImplementation("org.jetbrains.kotlin:kotlin-test")
+        testImplementation("org.mockito:mockito-core:5.0.0")
+
+        // Compile against the vendored AAR. Host apps must also depend on it
+        // (Flutter plugins cannot ship AAR classes transitively).
+        compileOnly(files("libs/OlaMapSdk-1.8.4.aar"))
+
+        implementation("org.maplibre.gl:android-sdk:11.13.1")
+        implementation("org.maplibre.gl:android-plugin-annotation-v9:3.0.2")
+        implementation("org.maplibre.gl:android-plugin-markerview-v9:3.0.2")
+        implementation("androidx.appcompat:appcompat:1.7.0")
+        implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+        implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    }
+}

@@ -1,0 +1,68 @@
+# Uncomment this line to define a global platform for your project
+platform :ios, '15.0'
+
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install, make sure to flutter pub get first"
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+def ola_maps_swift_package_manager_enabled?
+  plugins_file = File.expand_path('../.flutter-plugins-dependencies', __dir__)
+  return false unless File.exist?(plugins_file)
+
+  require 'json'
+  JSON.parse(File.read(plugins_file)).dig('swift_package_manager_enabled', 'ios') == true
+end
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  # CocoaPods-only apps still need the complete OlaMapCore spec. With Flutter
+  # 3.44+ SwiftPM, ola_maps embeds those xcframeworks itself — installing both
+  # would duplicate MoEngage/MapLibre and break device launch.
+  unless ola_maps_swift_package_manager_enabled?
+    require File.join(File.dirname(File.realpath(__FILE__)), '.symlinks/plugins/ola_maps/ios/ola_maps_ios_sdk.rb')
+    install_ola_maps_ios_sdk!
+  end
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_LOCATION=1',
+      ]
+    end
+  end
+end

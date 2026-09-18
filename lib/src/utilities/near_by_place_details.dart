@@ -8,6 +8,22 @@ class NearByPlaceDetails {
   final List<String> types;
   final List<String> layer;
   final int? distanceMeters;
+  final Map<String, dynamic>? openingHours;
+  final String? businessStatus;
+  final String? url;
+  final String? formattedPhoneNumber;
+  final String? internationalPhoneNumber;
+  final String? website;
+  final List<dynamic> photos;
+  final num? rating;
+  final List<dynamic> amenitiesAvailable;
+  final dynamic wheelchairAccessibility;
+  final dynamic parkingAvailable;
+  final dynamic isLandmark;
+  final String? landmarkType;
+  final String? paymentMode;
+  final List<dynamic> popularItems;
+  final dynamic languageSpoken;
 
   NearByPlaceDetails({
     required this.description,
@@ -19,20 +35,65 @@ class NearByPlaceDetails {
     required this.types,
     required this.layer,
     required this.distanceMeters,
+    this.openingHours,
+    this.businessStatus,
+    this.url,
+    this.formattedPhoneNumber,
+    this.internationalPhoneNumber,
+    this.website,
+    this.photos = const [],
+    this.rating,
+    this.amenitiesAvailable = const [],
+    this.wheelchairAccessibility,
+    this.parkingAvailable,
+    this.isLandmark,
+    this.landmarkType,
+    this.paymentMode,
+    this.popularItems = const [],
+    this.languageSpoken,
   });
 
   factory NearByPlaceDetails.fromJson(Map<String, dynamic> json) {
+    List<String> asStrings(dynamic value) {
+      if (value is List) return value.map((item) => item.toString()).toList();
+      if (value is String && value.isNotEmpty) return [value];
+      return const [];
+    }
+
     return NearByPlaceDetails(
-      description: json['description'],
-      matchedSubstrings: json['matched_substrings'] ?? [],
-      placeId: json['place_id'],
-      reference: json['reference'],
-      structuredFormatting:
-          StructuredFormatting.fromJson(json['structured_formatting']),
-      terms: (json['terms'] as List).map((e) => Term.fromJson(e)).toList(),
-      types: List<String>.from(json['types']),
-      layer: List<String>.from(json['layer']),
-      distanceMeters: json['distance_meters'],
+      description: json['description']?.toString() ?? '',
+      matchedSubstrings: json['matched_substrings'] as List? ?? const [],
+      placeId: json['place_id']?.toString() ?? '',
+      reference: json['reference']?.toString() ?? '',
+      structuredFormatting: StructuredFormatting.fromJson(
+        Map<String, dynamic>.from(
+          json['structured_formatting'] as Map? ?? const {},
+        ),
+      ),
+      terms: ((json['terms'] as List?) ?? const [])
+          .map((e) => Term.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      types: asStrings(json['types']),
+      layer: asStrings(json['layer']),
+      distanceMeters: (json['distance_meters'] as num?)?.toInt(),
+      openingHours: json['opening_hours'] is Map
+          ? Map<String, dynamic>.from(json['opening_hours'] as Map)
+          : null,
+      businessStatus: json['business_status']?.toString(),
+      url: json['url']?.toString(),
+      formattedPhoneNumber: json['formatted_phone_number']?.toString(),
+      internationalPhoneNumber: json['international_phone_number']?.toString(),
+      website: json['website']?.toString(),
+      photos: json['photos'] as List? ?? const [],
+      rating: json['rating'] as num?,
+      amenitiesAvailable: json['amenities_available'] as List? ?? const [],
+      wheelchairAccessibility: json['wheelchair_accessibility'],
+      parkingAvailable: json['parking_available'],
+      isLandmark: json['is_landmark'],
+      landmarkType: json['landmark_type']?.toString(),
+      paymentMode: json['payment_mode']?.toString(),
+      popularItems: json['popular_items'] as List? ?? const [],
+      languageSpoken: json['language_spoken'],
     );
   }
 
@@ -47,6 +108,22 @@ class NearByPlaceDetails {
       'types': types,
       'layer': layer,
       'distance_meters': distanceMeters,
+      'opening_hours': openingHours,
+      'business_status': businessStatus,
+      'url': url,
+      'formatted_phone_number': formattedPhoneNumber,
+      'international_phone_number': internationalPhoneNumber,
+      'website': website,
+      'photos': photos,
+      'rating': rating,
+      'amenities_available': amenitiesAvailable,
+      'wheelchair_accessibility': wheelchairAccessibility,
+      'parking_available': parkingAvailable,
+      'is_landmark': isLandmark,
+      'landmark_type': landmarkType,
+      'payment_mode': paymentMode,
+      'popular_items': popularItems,
+      'language_spoken': languageSpoken,
     };
   }
 
@@ -71,9 +148,9 @@ class StructuredFormatting {
 
   factory StructuredFormatting.fromJson(Map<String, dynamic> json) {
     return StructuredFormatting(
-      mainText: json['main_text'],
+      mainText: json['main_text']?.toString() ?? '',
       mainTextMatchedSubstrings: json['main_text_matched_substrings'] ?? [],
-      secondaryText: json['secondary_text'],
+      secondaryText: json['secondary_text']?.toString() ?? '',
       secondaryTextMatchedSubstrings:
           json['secondary_text_matched_substrings'] ?? [],
     );
@@ -100,8 +177,8 @@ class Term {
 
   factory Term.fromJson(Map<String, dynamic> json) {
     return Term(
-      offset: json['offset'],
-      value: json['value'],
+      offset: (json['offset'] as num?)?.toInt() ?? 0,
+      value: json['value']?.toString() ?? '',
     );
   }
 

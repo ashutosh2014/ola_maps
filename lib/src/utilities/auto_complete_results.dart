@@ -24,19 +24,35 @@ class AutoCompleteResults {
   });
 
   factory AutoCompleteResults.fromJson(Map<String, dynamic> json) {
+    List<String> asStrings(dynamic value) {
+      if (value is List) return value.map((item) => item.toString()).toList();
+      if (value is String && value.isNotEmpty) return [value];
+      return const [];
+    }
+
     return AutoCompleteResults(
-      reference: json['reference'],
-      types: List<String>.from(json['types']),
-      matchedSubstrings: (json['matched_substrings'] as List)
-          .map((e) => MatchedSubstring.fromJson(e))
+      reference: json['reference']?.toString() ?? '',
+      types: asStrings(json['types']),
+      matchedSubstrings: ((json['matched_substrings'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((e) => MatchedSubstring.fromJson(Map<String, dynamic>.from(e)))
           .toList(),
-      distanceMeters: json['distance_meters'],
-      terms: (json['terms'] as List).map((e) => Term.fromJson(e)).toList(),
-      structuredFormatting:
-          StructuredFormatting.fromJson(json['structured_formatting']),
-      description: json['description'],
-      geometry: Location.fromJson(json['geometry']['location']),
-      placeId: json['place_id'],
+      distanceMeters: (json['distance_meters'] as num?)?.toInt(),
+      terms: ((json['terms'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((e) => Term.fromJson(Map<String, dynamic>.from(e)))
+          .toList(),
+      structuredFormatting: StructuredFormatting.fromJson(
+        Map<String, dynamic>.from(
+          json['structured_formatting'] as Map? ?? const {},
+        ),
+      ),
+      description: json['description']?.toString() ??
+          json['formatted_address']?.toString() ??
+          json['name']?.toString() ??
+          '',
+      geometry: locationFromPrediction(json),
+      placeId: json['place_id']?.toString() ?? json['id']?.toString() ?? '',
     );
   }
 
@@ -52,6 +68,31 @@ class AutoCompleteResults {
       'geometry': geometry.toJson(),
       'place_id': placeId,
     };
+  }
+
+  static Location locationFromPrediction(Map<String, dynamic> json) {
+    Map<String, dynamic>? loc;
+    final geometry = json['geometry'];
+    if (geometry is Map) {
+      final nested = geometry['location'];
+      if (nested is Map) {
+        loc = Map<String, dynamic>.from(nested);
+      } else if (geometry.containsKey('lat') ||
+          geometry.containsKey('lng') ||
+          geometry.containsKey('latitude') ||
+          geometry.containsKey('longitude')) {
+        loc = Map<String, dynamic>.from(geometry);
+      }
+    }
+    final top = json['location'];
+    if (loc == null && top is Map) {
+      loc = Map<String, dynamic>.from(top);
+    }
+    loc ??= {
+      'lat': json['lat'] ?? json['latitude'],
+      'lng': json['lng'] ?? json['longitude'],
+    };
+    return Location.fromJson(loc);
   }
 
   @override
@@ -71,8 +112,8 @@ class MatchedSubstring {
 
   factory MatchedSubstring.fromJson(Map<String, dynamic> json) {
     return MatchedSubstring(
-      offset: json['offset'],
-      length: json['length'],
+      offset: (json['offset'] as num?)?.toInt() ?? 0,
+      length: (json['length'] as num?)?.toInt() ?? 0,
     );
   }
 

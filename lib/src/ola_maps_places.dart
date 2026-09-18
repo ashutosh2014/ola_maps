@@ -1,13 +1,12 @@
-import 'dart:convert';
-
+import 'package:ola_maps/src/ola_maps_http.dart';
 import 'package:ola_maps/src/utilities/enums.dart';
 import 'package:ola_maps/src/utilities/exceptions.dart';
 import 'package:ola_maps/src/utilities/models.dart';
-
-import 'package:http/http.dart' as http;
+import 'package:ola_maps/src/utilities/rest_models.dart';
 
 class OlaMapsPlaces {
   String apiKey;
+  late final OlaMapsHttp _http;
 
   final String placesApi = 'https://api.olamaps.io/places/v1';
 
@@ -16,7 +15,8 @@ class OlaMapsPlaces {
   final String nearbysearch = '/nearbysearch';
   final String autocomplete = '/autocomplete';
 
-  OlaMapsPlaces({required this.apiKey});
+  OlaMapsPlaces({required this.apiKey, OlaMapsHttp? httpClient})
+      : _http = httpClient ?? OlaMapsHttp(apiKey: apiKey);
 
   /// Provides a list of places based on textual queries without needing actual location coordinates.
   ///
@@ -31,33 +31,34 @@ class OlaMapsPlaces {
   /// - `size`: The number of predictions to return (default: 5).
   Future<List<TextSearchPrediction>> getTextPredictions({
     required String input,
-    required Location location,
-    double radius = 5000,
-    required List<String> types,
+    Location? location,
+    double? radius,
+    List<String> types = const [],
     int size = 5,
+    Object? language,
+    String? requestId,
+    String? correlationId,
   }) async {
-    var uri = Uri.parse(
-        '$placesApi$textsearch?input=$input&location=${location.lat},${location.lng}&radius=${radius.toInt()}${types.isNotEmpty ? '&types=${types.join(',')}' : ''}&size=$size&api_key=$apiKey');
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      final jsonResponse = json.decode(response.body);
-
-      if (parseStatus(jsonResponse['status']) == Status.ok) {
-        return (jsonResponse['predictions'] as List)
-            .map((result) => TextSearchPrediction.fromJson(result))
-            .toList();
-      } else if (parseStatus(jsonResponse['status']) == Status.zeroResults) {
-        return [];
-      }
-    } else if (response.statusCode == 400) {
-      final jsonResponse = json.decode(response.body);
-      throw BadRequestException(jsonResponse['error_message'] ?? 'Bad request');
-    } else if (response.statusCode == 500) {
-      throw ServerException('Internal server error');
+    final json = await _http.getJson(
+      '/places/v1/textsearch',
+      query: _http.withLanguage({
+        'input': input,
+        if (location != null) 'location': location.toString(),
+        if (radius != null) 'radius': radius,
+        if (types.isNotEmpty) 'types': types.join(','),
+        'size': size,
+      }, language: language),
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    final map = Map<String, dynamic>.from(json as Map);
+    if (parseStatus(map['status']?.toString() ?? 'ok') == Status.zeroResults) {
+      return [];
     }
-
-    throw ApiException('Failed to load data');
+    return flattenPredictions(map['predictions'])
+        .whereType<Map>()
+        .map((item) => TextSearchPrediction.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
   }
 
   /// Retrieves detailed information about a place specified by its ID.
@@ -67,28 +68,40 @@ class OlaMapsPlaces {
   /// Returns a [PlaceDetails] object containing the details of the specified place.
   Future<PlaceDetails> getPlaceDetails({
     required String placeId,
+    Object? language,
+    bool advanced = false,
+    String? requestId,
+    String? correlationId,
   }) async {
-    var uri = Uri.parse('$placesApi$details?place_id=$placeId&api_key=$apiKey');
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      final jsonResponse = json.decode(response.body);
-
-      if (parseStatus(jsonResponse['status']) == Status.ok) {
-        return PlaceDetails.fromJson(jsonResponse['result']);
-      } else if (parseStatus(jsonResponse['status']) == Status.zeroResults) {
-        final jsonResponse = json.decode(response.body);
-        throw BadRequestException(
-            jsonResponse['error_message'] ?? 'Bad request');
-      }
-    } else if (response.statusCode == 400) {
-      final jsonResponse = json.decode(response.body);
-      throw BadRequestException(jsonResponse['error_message'] ?? 'Bad request');
-    } else if (response.statusCode == 500) {
-      throw ServerException('Internal server error');
+    final json = await _http.getJson(
+      advanced ? '/places/v1/details/advanced' : '/places/v1/details',
+      query: _http.withLanguage({
+        'place_id': placeId,
+      }, language: language),
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    final map = Map<String, dynamic>.from(json as Map);
+    final result = map['result'];
+    if (result is Map) {
+      return PlaceDetails.fromJson(Map<String, dynamic>.from(result));
     }
+    throw ApiException(map['error_message']?.toString() ?? 'Place not found');
+  }
 
-    throw ApiException('Failed to load data');
+  Future<PlaceDetails> getAdvancedPlaceDetails({
+    required String placeId,
+    Object? language,
+    String? requestId,
+    String? correlationId,
+  }) {
+    return getPlaceDetails(
+      placeId: placeId,
+      language: language,
+      advanced: true,
+      requestId: requestId,
+      correlationId: correlationId,
+    );
   }
 
   /// Provides nearby places of specific categories based on the provided location.
@@ -112,52 +125,62 @@ class OlaMapsPlaces {
     bool strictBounds = false,
     bool withCentroid = false,
     int limit = 5,
+    Object? language,
+    String rankBy = 'popular',
+    bool advanced = false,
     String? requestId,
     String? correlationId,
   }) async {
-// Build the query parameters
-    final queryParameters = {
-      'location': location.toString(),
-      if (layers.isNotEmpty) 'layers': layers,
-      if (types.isNotEmpty) 'types': types,
-      'radius': radius.toString(),
-      'strictbounds': strictBounds.toString(),
-      'withCentroid': withCentroid.toString(),
-      'limit': limit.toString(),
-    };
-
-    // Construct the URI with query parameters
-    var uri = Uri.parse(
-        '$placesApi$nearbysearch?${Uri(queryParameters: queryParameters)}&api_key=$apiKey');
-
-    // Set headers
-    final headers = {
-      if (requestId != null) 'X-Request-Id': requestId,
-      if (correlationId != null) 'X-Correlation-Id': correlationId,
-      'Accept': 'application/json',
-    };
-
-    final response = await http.get(uri, headers: headers);
-
-    print(">>> ${response.body} >> ${response.statusCode}");
-    if (response.statusCode == 200) {
-      final jsonResponse = json.decode(response.body);
-
-      if (parseStatus(jsonResponse['status']) == Status.ok) {
-        return (jsonResponse['predictions'] as List)
-            .map((result) => NearByPlaceDetails.fromJson(result))
-            .toList();
-      } else if (parseStatus(jsonResponse['status']) == Status.zeroResults) {
-        return [];
-      }
-    } else if (response.statusCode == 400) {
-      final jsonResponse = json.decode(response.body);
-      throw BadRequestException(jsonResponse['error_message'] ?? 'Bad request');
-    } else if (response.statusCode == 500) {
-      throw ServerException('Internal server error');
+    final json = await _http.getJson(
+      advanced
+          ? '/places/v1/nearbysearch/advanced'
+          : '/places/v1/nearbysearch',
+      query: _http.withLanguage({
+        'location': location.toString(),
+        if (layers.isNotEmpty) 'layers': layers.join(','),
+        if (types.isNotEmpty) 'types': types.join(','),
+        'radius': radius,
+        'strictbounds': strictBounds,
+        'withCentroid': withCentroid,
+        'limit': limit,
+        'rankBy': rankBy,
+      }, language: language),
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    final map = Map<String, dynamic>.from(json as Map);
+    if (parseStatus(map['status']?.toString() ?? 'ok') == Status.zeroResults) {
+      return [];
     }
+    return flattenPredictions(map['predictions'])
+        .whereType<Map>()
+        .map((item) => NearByPlaceDetails.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
 
-    throw ApiException('Failed to load data');
+  Future<List<NearByPlaceDetails>> getAdvancedNearbySearchPlaces({
+    required Location location,
+    List<String> types = const [],
+    int radius = 6000,
+    bool withCentroid = false,
+    int limit = 5,
+    Object? language,
+    String rankBy = 'popular',
+    String? requestId,
+    String? correlationId,
+  }) {
+    return getNearBySearchPlaces(
+      location: location,
+      types: types,
+      radius: radius,
+      withCentroid: withCentroid,
+      limit: limit,
+      language: language,
+      rankBy: rankBy,
+      advanced: true,
+      requestId: requestId,
+      correlationId: correlationId,
+    );
   }
 
   /// Provides autocomplete suggestions for a given substring.
@@ -175,46 +198,69 @@ class OlaMapsPlaces {
     required String input,
     Location? location,
     int? radius,
+    bool? strictBounds,
+    Object? language,
+    List<String> types = const [],
     String? requestId,
     String? correlationId,
   }) async {
-    // Build the query parameters
-    final queryParameters = {
-      if (location != null) 'location': location.toString(),
-      'input': input,
-      if (radius != null) 'radius': radius,
-    };
-
-    // Construct the URI with query parameters
-    var uri = Uri.parse(
-        '$placesApi$autocomplete${Uri(queryParameters: queryParameters)}&api_key=$apiKey');
-
-    print("DSA>> ${uri.toString()}"); // Set headers
-    final headers = {
-      if (requestId != null) 'X-Request-Id': requestId,
-      if (correlationId != null) 'X-Correlation-Id': correlationId,
-      'Accept': 'application/json',
-    };
-
-    final response = await http.get(uri, headers: headers);
-
-    if (response.statusCode == 200) {
-      final jsonResponse = json.decode(response.body);
-
-      if (parseStatus(jsonResponse['status']) == Status.ok) {
-        return (jsonResponse['predictions'] as List)
-            .map((result) => AutoCompleteResults.fromJson(result))
-            .toList();
-      } else if (parseStatus(jsonResponse['status']) == Status.zeroResults) {
-        return [];
-      }
-    } else if (response.statusCode == 400) {
-      final jsonResponse = json.decode(response.body);
-      throw BadRequestException(jsonResponse['error_message'] ?? 'Bad request');
-    } else if (response.statusCode == 500) {
-      throw ServerException('Internal server error');
+    final query = input.trim();
+    if (query.length < 2) return const [];
+    final json = await _http.getJson(
+      '/places/v1/autocomplete',
+      query: _http.withLanguage({
+        'input': query,
+        if (location != null) 'location': location.toString(),
+        if (radius != null) 'radius': radius,
+        if (strictBounds != null) 'strictbounds': strictBounds,
+        if (types.isNotEmpty) 'types': types.join(','),
+      }, language: language),
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    final map = Map<String, dynamic>.from(json as Map);
+    if (parseStatus(map['status']?.toString() ?? 'ok') == Status.zeroResults) {
+      return [];
     }
+    return flattenPredictions(
+      map['predictions'] ?? map['results'] ?? map['suggestions'],
+    )
+        .whereType<Map>()
+        .map((item) =>
+            AutoCompleteResults.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+  }
 
-    throw ApiException('Failed to load data');
+  Future<AddressValidationResult> validateAddress(
+    String address, {
+    String? requestId,
+    String? correlationId,
+  }) async {
+    final json = await _http.getJson(
+      '/places/v1/addressvalidation',
+      query: {'address': address},
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    return AddressValidationResult.fromJson(
+      Map<String, dynamic>.from(json as Map),
+    );
+  }
+
+  Future<List<PlacePhoto>> getPhoto(
+    String photoReference, {
+    String? requestId,
+    String? correlationId,
+  }) async {
+    final json = await _http.getJson(
+      '/places/v1/photo',
+      query: {'photo_reference': photoReference},
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    final map = Map<String, dynamic>.from(json as Map);
+    return ((map['photos'] as List?) ?? const [])
+        .map((item) => PlacePhoto.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
   }
 }
