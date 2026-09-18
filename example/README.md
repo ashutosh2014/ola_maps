@@ -1,9 +1,10 @@
 # ola_maps example
 
-Android and iOS demo for the `ola_maps` Flutter plugin.
+Android, iOS, and web demo for the `ola_maps` Flutter plugin.
 
 - Android wraps [Ola Maps SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk).
 - iOS wraps [OlaMapCore / OlaMapService](https://github.com/ola-maps/ios-map-sdk) (api key, tile URL, project id).
+- Web wraps [Ola Maps Web SDK v2](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup) (`olamaps-web-sdk`).
 
 ## Run
 
@@ -16,5 +17,7 @@ flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_PROJE
 Android `minSdk` is 24. The Ola Maps AAR lives at `android/app/libs/OlaMapSdk-1.8.4.aar`.
 
 iOS requires 15.0+. The example `Podfile` pulls `OlaMapCore` from git. Location permission strings are in `ios/Runner/Info.plist`.
+
+Web loads `olamaps-web-sdk` from UNPKG in `web/index.html`. Run with `-d chrome`.
 
 The bottom toolbar adds/removes markers, polylines, circles, polygons, bezier curves, clusters, and a directions polyline.

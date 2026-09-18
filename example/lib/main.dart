@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:ola_maps/ola_maps.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -115,7 +116,9 @@ class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
   void initState() {
     super.initState();
     _routingService = OlaRoutingService(apiKey: kOlaMapsApiKey);
-    Permission.location.request();
+    if (!kIsWeb) {
+      Permission.location.request();
+    }
   }
 
   @override

@@ -32,7 +32,6 @@ JSFunction? olaMapsCtor() {
 
 JSAny? jsValue(Object? value) {
   if (value == null) return null;
-  if (value is JSAny) return value;
   if (value is String) return value.toJS;
   if (value is num) return value.toJS;
   if (value is bool) return value.toJS;
@@ -135,7 +134,7 @@ Future<void> _waitForCtor() async {
 void _injectCss(String hrefOrCss, String marker, {bool inline = false}) {
   if (web.document.querySelector('[$marker]') != null) return;
   if (inline) {
-    final style = web.HTMLStyleElement()..text = hrefOrCss;
+    final style = web.HTMLStyleElement()..textContent = hrefOrCss;
     style.setAttribute(marker, 'true');
     web.document.head?.append(style);
     return;

@@ -57,4 +57,15 @@ void main() {
       'https://example.com/custom.json',
     );
   });
+
+  test('web SDK constants match Ola Maps CDN URLs', () {
+    expect(
+      kOlaMapsWebSdkUrl,
+      contains('olamaps-web-sdk'),
+    );
+    expect(
+      kOlaMapsDefaultThreeDTileset,
+      contains('3dtiles/tileset.json'),
+    );
+  });
 }

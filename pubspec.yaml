@@ -1,19 +1,22 @@
 name: ola_maps
-description: Ola Maps Flutter plugin (Android and iOS SDK map views) plus Places / Geocoder helpers. Vendored from ola_maps_flutter 0.2.0.
+description: Ola Maps Flutter plugin (Android, iOS, and Web SDK map views) plus Places / Geocoder helpers. Vendored from ola_maps_flutter 0.2.0.
 version: 0.3.0
 homepage: https://github.com/ashutosh2014/ola_maps
 repository: https://github.com/ashutosh2014/ola_maps
 
 environment:
-  sdk: ">=3.0.0 <4.0.0"
-  flutter: ">=3.3.0"
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  flutter_web_plugins:
+    sdk: flutter
   plugin_platform_interface: ^2.0.2
   http: ^1.1.0
   animated_custom_dropdown: ^3.1.1
+  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -28,6 +31,9 @@ flutter:
         pluginClass: OlaMapViewFlutterPlugin
       ios:
         pluginClass: OlaMapViewFlutterPlugin
+      web:
+        pluginClass: OlaMapViewFlutterWeb
+        fileName: ola_map_view_flutter_web.dart
 
 topics:
   - maps

@@ -1,5 +1,6 @@
 ## 0.3.0
 
+* Added Flutter **web** `OlaMapView` via [Ola Maps Web SDK v2](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup) (`olamaps-web-sdk`), including markers, popups, events/controls, geolocation, 3D tiles, and GeoJSON overlays.
 * Added multilingual `language` support (12 ISO 639-1 codes) across Places, Routing, Geocoding, Static Maps, and iOS Dynamic Maps.
 * Completed Flutter Android Map SDK integration against Ola Maps SDK 1.8.4.
 * Added iOS `OlaMapView` via `OlaMapService` (api key, tile URL, project id), location Info.plist keys, and CocoaPods `OlaMapCore`.

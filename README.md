@@ -1,12 +1,12 @@
 # ola_maps
 
-Flutter plugin for [Ola Maps](https://maps.olakrutrim.com/) — Android and iOS map views plus Places / Geocoder helpers.
+Flutter plugin for [Ola Maps](https://maps.olakrutrim.com/) — Android, iOS, and Web map views plus Places / Geocoder helpers.
 
-Wraps [Ola Maps Android SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk) and [Ola Maps iOS SDK (`OlaMapCore` / `OlaMapService`)](https://github.com/ola-maps/ios-map-sdk) as Flutter `PlatformView`s. Existing Places API helpers from this repo stay under `lib/ola_maps_api.dart`.
+Wraps [Ola Maps Android SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk), [Ola Maps iOS SDK (`OlaMapCore` / `OlaMapService`)](https://github.com/ola-maps/ios-map-sdk), and [Ola Maps Web SDK v2 (`olamaps-web-sdk`)](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup) as Flutter `PlatformView`s / `HtmlElementView`. Existing Places API helpers from this repo stay under `lib/ola_maps_api.dart`.
 
 ## Features
 
-- Interactive map (`OlaMapView`) on **Android** and **iOS**
+- Interactive map (`OlaMapView`) on **Android**, **iOS**, and **Web**
 - Markers, info windows, polylines, circles, polygons, bezier curves, clustering
 - Camera: `zoomToLocation`, `moveCamera`, `zoomIn` / `zoomOut`, `getCamera`, `onCameraIdle`
 - Map events: tap, long-press, marker tap, map error
@@ -15,7 +15,7 @@ Wraps [Ola Maps Android SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk)
 - HTTP APIs: Places, Geocode, Roads, Geofencing, Elevation, Tiles, Street View (`Olamaps.instance`)
 - Multilingual names, addresses, and turn-by-turn instructions in 12 languages (`language` / [OlaMapsLanguage])
 
-iOS maps use `OlaMapService` (api key, tile URL, project id). Native iOS overlay APIs differ slightly from Android (annotations vs markers; bezier/clustering are approximated).
+iOS maps use `OlaMapService` (api key, tile URL, project id). Native iOS overlay APIs differ slightly from Android (annotations vs markers; bezier/clustering are approximated). Web maps use the [Ola Maps Web SDK](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup) (MapLibre) with the same `OlaMapController` overlay methods.
 
 ## Use in an app
 
@@ -31,7 +31,7 @@ import 'package:ola_maps/ola_maps.dart';
 OlaMapView(
   apiKey: 'YOUR_OLA_MAPS_API_KEY',
   tileUrl: kOlaMapsDefaultTileUrl,
-  language: OlaMapsLanguage.hi, // iOS Dynamic Maps: default-light-standard-hi
+  language: OlaMapsLanguage.hi, // Dynamic Maps: default-light-standard-hi
   projectId: 'YOUR_PROJECT_ID', // iOS OlaMapService; from the Ola Maps dashboard
   initialCameraPosition: const OlaLatLng(18.5214, 73.9317),
   initialZoom: 14,
@@ -271,21 +271,48 @@ Malayalam (and other non-English) labels use `default-light-standard-{code}`:
 
 Turn-by-turn navigation (`OlaMapNavigationService`) is a separate [Navigation SDK](https://github.com/ola-maps/ios-navigation-sdk) and is not wrapped by `OlaMapView`.
 
+## Web setup
+
+Uses [Ola Maps Web SDK v2](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup) (`olamaps-web-sdk` ≥ 1.2.0). The plugin loads the UMD bundle from UNPKG if it is not already on the page. You can also inject it yourself:
+
+```html
+<script src="https://www.unpkg.com/olamaps-web-sdk@1.4.0/dist/olamaps-web-sdk.umd.js"></script>
+```
+
+`OlaMapView` still takes `apiKey`, `tileUrl`, and `language`. Non-English styles append `-{code}` (for example Marathi):
+
+`https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard-mr/style.json`
+
+Optional 3D mode:
+
+```dart
+OlaMapView(
+  apiKey: 'YOUR_OLA_MAPS_API_KEY',
+  mode3d: true,
+  threeDTileset: kOlaMapsDefaultThreeDTileset,
+  projectId: 'YOUR_PROJECT_ID',
+)
+```
+
+Markers, popups, click / idle / error events, compass / zoom controls, and geolocation use the Web SDK (`addMarker`, `addPopup`, `NavigationControl`, `addGeolocateControls`). Polylines, polygons, circles, bezier curves, and clustering are GeoJSON layers on the MapLibre map returned by `olaMaps.init`.
+
 ## Example app
 
 ```bash
 cd example
 flutter run --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_PROJECT_ID=YOUR_PROJECT_ID --dart-define=OLA_MAPS_LANGUAGE=hi
+flutter run -d chrome --dart-define=OLA_MAPS_API_KEY=YOUR_KEY --dart-define=OLA_MAPS_LANGUAGE=mr
 ```
 
 The example demos markers, polylines, circles, polygons, bezier curves, clustering, routing, and current location.
 
 ## Requirements
 
-- Flutter SDK ≥ 3.3
+- Flutter SDK ≥ 3.22
 - Android `minSdk` ≥ 24, Ola Maps Android SDK **1.8.4**
 - iOS 15.0+, OlaMapCore **1.0.8** (`OlaMapService`)
+- Web: `olamaps-web-sdk` **1.4.0** (loaded from CDN)
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Upstream map plugin: [imselmon/ola_maps_flutter](https://github.com/imselmon/ola_maps_flutter). Android SDK: [ola-maps/android-maps-sdk](https://github.com/ola-maps/android-maps-sdk). iOS SDK: [ola-maps/ios-map-sdk](https://github.com/ola-maps/ios-map-sdk).
+MIT — see [LICENSE](LICENSE). Upstream map plugin: [imselmon/ola_maps_flutter](https://github.com/imselmon/ola_maps_flutter). Android SDK: [ola-maps/android-maps-sdk](https://github.com/ola-maps/android-maps-sdk). iOS SDK: [ola-maps/ios-map-sdk](https://github.com/ola-maps/ios-map-sdk). Web SDK: [ola-maps/olamaps-web-sdk](https://github.com/ola-maps/olamaps-web-sdk).

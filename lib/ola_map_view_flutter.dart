@@ -6,6 +6,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:ola_maps/src/map/ola_map_channels.dart'
+    if (dart.library.html) 'package:ola_maps/src/map/ola_map_channels_web.dart'
+    if (dart.library.js_interop) 'package:ola_maps/src/map/ola_map_channels_web.dart';
 import 'package:ola_maps/src/utilities/ola_maps_language.dart';
 
 export 'ola_routing_service.dart';
@@ -101,8 +104,6 @@ String formatOlaMapError(Object error) {
 
 class OlaMapController {
   final int id;
-  final MethodChannel _channel;
-  final EventChannel _cameraChannel;
   StreamSubscription? _cameraSub;
   final Completer<void> _ready = Completer<void>();
   Object? _loadError;
@@ -113,11 +114,10 @@ class OlaMapController {
   void Function(String markerId)? onMarkerClick;
   void Function(String error)? onMapError;
 
-  OlaMapController._(this.id)
-      : _channel = MethodChannel('ola_map_view_flutter_$id'),
-        _cameraChannel = EventChannel('ola_map_view_flutter_camera_$id') {
-    _channel.setMethodCallHandler(_onNativeCall);
-    _cameraSub = _cameraChannel.receiveBroadcastStream().listen((event) {
+  OlaMapController._(this.id) {
+    olaMapListen(id, _onNativeCall);
+    final camera = olaMapCameraStream(id);
+    _cameraSub = camera?.listen((event) {
       if (event is Map) {
         onCameraIdle?.call(OlaLatLng.fromJson(event));
       }
@@ -128,6 +128,10 @@ class OlaMapController {
 
   static OlaMapController _getController(int id) {
     return _controllers.putIfAbsent(id, () => OlaMapController._(id));
+  }
+
+  Future<dynamic> _invoke(String method, [dynamic arguments]) {
+    return olaMapInvoke(id, method, arguments);
   }
 
   Future<dynamic> _onNativeCall(MethodCall call) async {
@@ -156,6 +160,10 @@ class OlaMapController {
           if (markerId != null) onMarkerClick?.call(markerId);
         }
         break;
+      case 'onCameraIdle':
+        final args = call.arguments;
+        if (args is Map) onCameraIdle?.call(OlaLatLng.fromJson(args));
+        break;
     }
   }
 
@@ -165,7 +173,7 @@ class OlaMapController {
     }
     if (!_ready.isCompleted) {
       try {
-        await _channel.invokeMethod('waitUntilMapReady');
+        await _invoke('waitUntilMapReady');
       } on PlatformException catch (e) {
         _loadError = e;
         throw formatOlaMapError(e);
@@ -185,8 +193,17 @@ class OlaMapController {
     onMapLongClick = null;
     onMarkerClick = null;
     onMapError = null;
-    _channel.setMethodCallHandler(null);
+    olaMapListen(id, null);
+    olaMapDisposeChannel(id);
     _controllers.remove(id);
+  }
+
+  Future<void> initializeView(Map<String, dynamic> params) async {
+    try {
+      await _invoke('initialize', params);
+    } on MissingPluginException {
+      // Mobile SDKs create the map from PlatformView creationParams.
+    }
   }
 
   Future<String?> addMarker({
@@ -204,7 +221,7 @@ class OlaMapController {
     List<double>? iconOffset,
   }) async {
     try {
-      final result = await _channel.invokeMethod('addMarker', {
+      final result = await _invoke('addMarker', {
         'markerId': markerId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'latitude': position.latitude,
         'longitude': position.longitude,
@@ -228,7 +245,7 @@ class OlaMapController {
 
   Future<void> removeMarker(String markerId) async {
     try {
-      await _channel.invokeMethod('removeMarker', {'markerId': markerId});
+      await _invoke('removeMarker', {'markerId': markerId});
     } catch (e) {
       debugPrint('Error removing marker: $e');
     }
@@ -258,7 +275,7 @@ class OlaMapController {
       if (iconSize != null) args['iconSize'] = iconSize;
       if (snippet != null) args['snippet'] = snippet;
       if (subSnippet != null) args['subSnippet'] = subSnippet;
-      await _channel.invokeMethod('updateMarker', args);
+      await _invoke('updateMarker', args);
     } catch (e) {
       debugPrint('Error updating marker: $e');
     }
@@ -266,7 +283,7 @@ class OlaMapController {
 
   Future<void> showInfoWindow(String markerId) async {
     try {
-      await _channel.invokeMethod('showInfoWindow', {'markerId': markerId});
+      await _invoke('showInfoWindow', {'markerId': markerId});
     } catch (e) {
       debugPrint('Error showing info window: $e');
     }
@@ -274,7 +291,7 @@ class OlaMapController {
 
   Future<void> hideInfoWindow(String markerId) async {
     try {
-      await _channel.invokeMethod('hideInfoWindow', {'markerId': markerId});
+      await _invoke('hideInfoWindow', {'markerId': markerId});
     } catch (e) {
       debugPrint('Error hiding info window: $e');
     }
@@ -282,7 +299,7 @@ class OlaMapController {
 
   Future<void> updateInfoWindow(String markerId, String text) async {
     try {
-      await _channel.invokeMethod('updateInfoWindow', {
+      await _invoke('updateInfoWindow', {
         'markerId': markerId,
         'text': text,
       });
@@ -299,7 +316,7 @@ class OlaMapController {
     double? width,
   }) async {
     try {
-      final result = await _channel.invokeMethod('addPolyline', {
+      final result = await _invoke('addPolyline', {
         'polylineId':
             polylineId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'points': points.map((p) => p.toJson()).toList(),
@@ -316,7 +333,7 @@ class OlaMapController {
 
   Future<void> removePolyline(String polylineId) async {
     try {
-      await _channel.invokeMethod('removePolyline', {'polylineId': polylineId});
+      await _invoke('removePolyline', {'polylineId': polylineId});
     } catch (e) {
       debugPrint('Error removing polyline: $e');
     }
@@ -337,7 +354,7 @@ class OlaMapController {
       if (color != null) args['color'] = color;
       if (width != null) args['width'] = width;
       if (lineType != null) args['lineType'] = lineType;
-      await _channel.invokeMethod('updatePolyline', args);
+      await _invoke('updatePolyline', args);
     } catch (e) {
       debugPrint('Error updating polyline: $e');
     }
@@ -355,7 +372,7 @@ class OlaMapController {
     String? borderLineType,
   }) async {
     try {
-      final result = await _channel.invokeMethod('addCircle', {
+      final result = await _invoke('addCircle', {
         'circleId':
             circleId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'latitude': center.latitude,
@@ -377,7 +394,7 @@ class OlaMapController {
 
   Future<void> removeCircle(String circleId) async {
     try {
-      await _channel.invokeMethod('removeCircle', {'circleId': circleId});
+      await _invoke('removeCircle', {'circleId': circleId});
     } catch (e) {
       debugPrint('Error removing circle: $e');
     }
@@ -407,7 +424,7 @@ class OlaMapController {
       if (borderColor != null) args['borderColor'] = borderColor;
       if (borderWidth != null) args['borderWidth'] = borderWidth;
       if (borderLineType != null) args['borderLineType'] = borderLineType;
-      await _channel.invokeMethod('updateCircle', args);
+      await _invoke('updateCircle', args);
     } catch (e) {
       debugPrint('Error updating circle: $e');
     }
@@ -422,7 +439,7 @@ class OlaMapController {
     String? borderLineType,
   }) async {
     try {
-      final result = await _channel.invokeMethod('addPolygon', {
+      final result = await _invoke('addPolygon', {
         'polygonId':
             polygonId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'points': points.map((p) => p.toJson()).toList(),
@@ -440,7 +457,7 @@ class OlaMapController {
 
   Future<void> removePolygon(String polygonId) async {
     try {
-      await _channel.invokeMethod('removePolygon', {'polygonId': polygonId});
+      await _invoke('removePolygon', {'polygonId': polygonId});
     } catch (e) {
       debugPrint('Error removing polygon: $e');
     }
@@ -463,7 +480,7 @@ class OlaMapController {
       if (borderColor != null) args['borderColor'] = borderColor;
       if (borderWidth != null) args['borderWidth'] = borderWidth;
       if (borderLineType != null) args['borderLineType'] = borderLineType;
-      await _channel.invokeMethod('updatePolygon', args);
+      await _invoke('updatePolygon', args);
     } catch (e) {
       debugPrint('Error updating polygon: $e');
     }
@@ -478,7 +495,7 @@ class OlaMapController {
     double? width,
   }) async {
     try {
-      final result = await _channel.invokeMethod('addBezierCurve', {
+      final result = await _invoke('addBezierCurve', {
         'curveId': curveId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'startLatitude': startPoint.latitude,
         'startLongitude': startPoint.longitude,
@@ -497,7 +514,7 @@ class OlaMapController {
 
   Future<void> removeBezierCurve(String curveId) async {
     try {
-      await _channel.invokeMethod('removeBezierCurve', {'curveId': curveId});
+      await _invoke('removeBezierCurve', {'curveId': curveId});
     } catch (e) {
       debugPrint('Error removing bezier curve: $e');
     }
@@ -524,7 +541,7 @@ class OlaMapController {
       if (color != null) args['color'] = color;
       if (lineType != null) args['lineType'] = lineType;
       if (width != null) args['width'] = width;
-      await _channel.invokeMethod('updateBezierCurve', args);
+      await _invoke('updateBezierCurve', args);
     } catch (e) {
       debugPrint('Error updating bezier curve: $e');
     }
@@ -532,7 +549,7 @@ class OlaMapController {
 
   Future<void> zoomToLocation(OlaLatLng location, double zoomLevel) async {
     try {
-      await _channel.invokeMethod('zoomToLocation', {
+      await _invoke('zoomToLocation', {
         'latitude': location.latitude,
         'longitude': location.longitude,
         'zoomLevel': zoomLevel,
@@ -544,7 +561,7 @@ class OlaMapController {
 
   Future<void> zoomIn() async {
     try {
-      await _channel.invokeMethod('zoomIn');
+      await _invoke('zoomIn');
     } catch (e) {
       debugPrint('Error zooming in: $e');
     }
@@ -552,7 +569,7 @@ class OlaMapController {
 
   Future<void> zoomOut() async {
     try {
-      await _channel.invokeMethod('zoomOut');
+      await _invoke('zoomOut');
     } catch (e) {
       debugPrint('Error zooming out: $e');
     }
@@ -564,7 +581,7 @@ class OlaMapController {
     int durationMs = 500,
   }) async {
     try {
-      await _channel.invokeMethod('moveCamera', {
+      await _invoke('moveCamera', {
         'latitude': target.latitude,
         'longitude': target.longitude,
         'zoomLevel': zoom,
@@ -577,7 +594,7 @@ class OlaMapController {
 
   Future<OlaLatLng?> getCurrentLocation() async {
     try {
-      final result = await _channel.invokeMethod('getCurrentLocation');
+      final result = await _invoke('getCurrentLocation');
       if (result is Map) return OlaLatLng.fromJson(result);
       return null;
     } catch (e) {
@@ -594,7 +611,7 @@ class OlaMapController {
 
   Future<OlaCameraPosition?> getCamera() async {
     try {
-      final result = await _channel.invokeMethod('getCameraPosition');
+      final result = await _invoke('getCameraPosition');
       if (result is Map) return OlaCameraPosition.fromJson(result);
       return null;
     } catch (e) {
@@ -605,7 +622,7 @@ class OlaMapController {
 
   Future<void> showCurrentLocation() async {
     try {
-      await _channel.invokeMethod('showCurrentLocation');
+      await _invoke('showCurrentLocation');
     } catch (e) {
       debugPrint('Error showing current location: $e');
     }
@@ -613,7 +630,7 @@ class OlaMapController {
 
   Future<void> hideCurrentLocation() async {
     try {
-      await _channel.invokeMethod('hideCurrentLocation');
+      await _invoke('hideCurrentLocation');
     } catch (e) {
       debugPrint('Error hiding current location: $e');
     }
@@ -631,7 +648,7 @@ class OlaMapController {
     String? iconPath,
   }) async {
     try {
-      final result = await _channel.invokeMethod('addClusteredMarkers', {
+      final result = await _invoke('addClusteredMarkers', {
         'geoJson': geoJson,
         'clusterRadius': clusterRadius,
         'defaultMarkerColor': defaultMarkerColor,
@@ -700,7 +717,7 @@ class OlaMapController {
     String? iconPath,
   }) async {
     try {
-      await _channel.invokeMethod('updateClusteredMarkers', {
+      await _invoke('updateClusteredMarkers', {
         'clusterId': clusterId,
         'geoJson': geoJson,
         'clusterRadius': clusterRadius,
@@ -719,24 +736,35 @@ class OlaMapController {
 
   Future<void> removeClusteredMarkers(String clusterId) async {
     try {
-      await _channel
-          .invokeMethod('removeClusteredMarkers', {'clusterId': clusterId});
+      await _invoke('removeClusteredMarkers', {'clusterId': clusterId});
     } catch (e) {
       debugPrint('Error removing clustered markers: $e');
     }
   }
 }
 
-/// Default vector style used by the Ola Maps iOS SDK (`OlaMapService` tileURL).
+/// Default vector style used by Ola Maps (`OlaMapService` / Web SDK).
 const String kOlaMapsDefaultTileUrl =
     'https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json';
+
+/// 3D tileset used by the [Ola Maps Web SDK](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup).
+const String kOlaMapsDefaultThreeDTileset =
+    'https://api.olamaps.io/tiles/vector/v1/3dtiles/tileset.json';
+
+/// CDN URL for `olamaps-web-sdk` (UMD). The Flutter web plugin also loads this
+/// automatically if the host page did not include the script tag.
+const String kOlaMapsWebSdkUrl =
+    'https://www.unpkg.com/olamaps-web-sdk@1.4.0/dist/olamaps-web-sdk.umd.js';
 
 class OlaMapView extends StatefulWidget {
   final String apiKey;
   final String tileUrl;
-  /// ISO 639-1 code or [OlaMapsLanguage]. iOS Dynamic Maps load
+  /// ISO 639-1 code or [OlaMapsLanguage]. Dynamic Maps load
   /// `default-light-standard-{code}` unless [tileUrl] is a custom style.
   final Object? language;
+  /// Web SDK `mode: "3d"` plus [threeDTileset].
+  final bool mode3d;
+  final String? threeDTileset;
   final String projectId;
   final String? userId;
   final void Function(int id)? onMapCreated;
@@ -759,6 +787,8 @@ class OlaMapView extends StatefulWidget {
     required this.apiKey,
     this.tileUrl = kOlaMapsDefaultTileUrl,
     this.language,
+    this.mode3d = false,
+    this.threeDTileset,
     this.projectId = '',
     this.userId,
     this.onMapCreated,
@@ -821,6 +851,8 @@ class _OlaMapViewState extends State<OlaMapView> {
         'tiltGesturesEnabled': widget.tiltGesturesEnabled,
         'rotateGesturesEnabled': widget.rotateGesturesEnabled,
         'doubleTapGesturesEnabled': widget.doubleTapGesturesEnabled,
+        'mode3d': widget.mode3d,
+        'threeDTileset': widget.threeDTileset ?? kOlaMapsDefaultThreeDTileset,
         if (widget.initialCameraPosition != null) ...{
           'initialLatitude': widget.initialCameraPosition!.latitude,
           'initialLongitude': widget.initialCameraPosition!.longitude,
@@ -832,6 +864,7 @@ class _OlaMapViewState extends State<OlaMapView> {
     final controller = OlaMapController._getController(id);
     _controller = controller;
     try {
+      await controller.initializeView(_creationParams);
       await controller.waitUntilReady();
       if (!mounted) return;
       widget.onMapCreated?.call(id);
@@ -867,6 +900,9 @@ class _OlaMapViewState extends State<OlaMapView> {
     if (_loadError != null) {
       return _errorPane(_loadError!);
     }
+    if (kIsWeb) {
+      return _webView();
+    }
     if (defaultTargetPlatform == TargetPlatform.android) {
       return _androidView();
     }
@@ -875,6 +911,13 @@ class _OlaMapViewState extends State<OlaMapView> {
     }
     return _errorPane(
       '${defaultTargetPlatform.name} is not yet supported by the Ola Maps plugin',
+    );
+  }
+
+  Widget _webView() {
+    return HtmlElementView(
+      viewType: _viewType,
+      onPlatformViewCreated: _onPlatformViewCreated,
     );
   }
 
