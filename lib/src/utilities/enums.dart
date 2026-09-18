@@ -1,9 +1,7 @@
-import 'package:ola_maps/src/utilities/exceptions.dart';
-
 enum Status { ok, zeroResults, badRequest }
 
 Status parseStatus(String status) {
-  switch (status.toLowerCase()) {
+  switch (status.toLowerCase().trim()) {
     case 'ok':
     case 'success':
     case 'created':
@@ -15,8 +13,11 @@ Status parseStatus(String status) {
       return Status.zeroResults;
     case 'invalid_request':
     case 'bad_request':
+    case 'request_denied':
+    case 'over_query_limit':
+    case 'unknown_error':
       return Status.badRequest;
     default:
-      throw ApiException('Unknown status: $status');
+      return Status.ok;
   }
 }

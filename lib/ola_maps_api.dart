@@ -12,6 +12,7 @@ import 'package:ola_maps/src/utilities/ola_maps_language.dart';
 export 'src/utilities/models.dart';
 export 'src/utilities/rest_models.dart';
 export 'src/utilities/exceptions.dart';
+export 'src/utilities/enums.dart';
 export 'src/widgets/widgets.dart';
 export 'src/ola_maps_roads.dart';
 export 'src/ola_maps_geofence.dart';

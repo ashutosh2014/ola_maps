@@ -204,10 +204,12 @@ class OlaMapsPlaces {
     String? requestId,
     String? correlationId,
   }) async {
+    final query = input.trim();
+    if (query.length < 2) return const [];
     final json = await _http.getJson(
       '/places/v1/autocomplete',
       query: _http.withLanguage({
-        'input': input,
+        'input': query,
         if (location != null) 'location': location.toString(),
         if (radius != null) 'radius': radius,
         if (strictBounds != null) 'strictbounds': strictBounds,
@@ -220,7 +222,9 @@ class OlaMapsPlaces {
     if (parseStatus(map['status']?.toString() ?? 'ok') == Status.zeroResults) {
       return [];
     }
-    return flattenPredictions(map['predictions'])
+    return flattenPredictions(
+      map['predictions'] ?? map['results'] ?? map['suggestions'],
+    )
         .whereType<Map>()
         .map((item) =>
             AutoCompleteResults.fromJson(Map<String, dynamic>.from(item)))

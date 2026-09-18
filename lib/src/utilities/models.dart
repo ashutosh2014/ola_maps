@@ -138,6 +138,8 @@ class Location {
     );
   }
 
+  bool get hasCoordinates => lat != 0 || lng != 0;
+
   Map<String, dynamic> toJson() {
     return {
       'lng': lng,

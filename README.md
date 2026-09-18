@@ -17,6 +17,13 @@ Wraps [Ola Maps Android SDK 1.8.4](https://github.com/ola-maps/android-maps-sdk)
 
 iOS maps use `OlaMapService` (api key, tile URL, project id). Native iOS overlay APIs differ slightly from Android (annotations vs markers; bezier/clustering are approximated). Web maps use the [Ola Maps Web SDK](https://maps.olakrutrim.com/krutrim/docs/sdks/web-sdk/latest/setup) (MapLibre) with the same `OlaMapController` overlay methods.
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/demo_directions.jpg" width="45%" alt="Example app with a directions polyline, markers, and location search" />
+  <img src="screenshots/demo_search.jpg" width="45%" alt="Example app after searching a location and dropping a pin with coverage" />
+</p>
+
 ## Use in an app
 
 ```yaml

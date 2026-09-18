@@ -11,6 +11,9 @@ List<String> stringList(dynamic value) {
 }
 
 List<dynamic> flattenPredictions(dynamic predictions) {
+  if (predictions is Map) {
+    return flattenPredictions(predictions.values.toList());
+  }
   if (predictions is! List) return const [];
   if (predictions.isEmpty) return const [];
   if (predictions.first is List) {

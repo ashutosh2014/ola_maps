@@ -43,5 +43,9 @@ topics:
   - markers
 
 screenshots:
+  - description: "Directions polyline, markers, and location search in the example app"
+    path: screenshots/demo_directions.jpg
+  - description: "Location search pin with coverage circle in the example app"
+    path: screenshots/demo_search.jpg
   - description: "Ola Maps with markers and overlays"
     path: screenshots/app_screenshot.png

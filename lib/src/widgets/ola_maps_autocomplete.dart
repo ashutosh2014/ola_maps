@@ -13,7 +13,7 @@ class OlaMapsAutocomplete extends StatelessWidget {
     this.decoration,
     this.disabledDecoration,
     this.enabled = true,
-    this.excludeSelected = true,
+    this.excludeSelected = false,
     this.expandedHeaderPadding,
     this.futureRequestDelay,
     this.headerBuilder,
@@ -33,10 +33,14 @@ class OlaMapsAutocomplete extends StatelessWidget {
     this.searchRequestLoadingIndicator,
     this.visibility,
     this.language,
+    this.location,
   });
 
   /// Places Autocomplete `language` (ISO 639-1 or [OlaMapsLanguage]).
   final Object? language;
+
+  /// Optional origin used to rank nearby Places Autocomplete results.
+  final Location? location;
 
   /// Scroll controller to access items list scroll behavior.
   final ScrollController? itemsScrollController;
@@ -137,7 +141,7 @@ class OlaMapsAutocomplete extends StatelessWidget {
   final Function(bool)? visibility;
   @override
   Widget build(BuildContext context) {
-    return CustomDropdown.searchRequest(
+    return CustomDropdown<AutoCompleteResults>.searchRequest(
         noResultFoundText: noResultFoundText,
         closedHeaderPadding: closedHeaderPadding,
         controller: controller,
@@ -146,42 +150,37 @@ class OlaMapsAutocomplete extends StatelessWidget {
         enabled: enabled,
         excludeSelected: excludeSelected,
         expandedHeaderPadding: expandedHeaderPadding,
-        futureRequestDelay: futureRequestDelay,
+        futureRequestDelay:
+            futureRequestDelay ?? const Duration(milliseconds: 300),
         headerBuilder: headerBuilder ??
-            (___, _, __) {
-              return Text("${(_ as AutoCompleteResults).description}");
+            (context, item, _) {
+              return Text(item.description);
             },
         hideSelectedFieldWhenExpanded: hideSelectedFieldWhenExpanded,
-        hintText: hintText,
+        hintText: hintText ?? 'Search a location',
         itemsListPadding: itemsListPadding,
         listItemPadding: listItemPadding,
         listItemBuilder: listItemBuilder ??
-            (_, ___, __, ____) {
-              return Text('${(___ as AutoCompleteResults).description}');
+            (context, item, isSelected, onItemSelect) {
+              return Text(item.description);
             },
         overlayController: overlayController,
         searchRequestLoadingIndicator: searchRequestLoadingIndicator,
         noResultFoundBuilder: noResultFoundBuilder,
-        searchHintText: searchHintText,
-        key: key,
+        searchHintText: searchHintText ?? 'Search a location',
         visibility: visibility,
         maxlines: maxlines,
         overlayHeight: overlayHeight,
         closeDropDownOnClearFilterSearch: closeDropDownOnClearFilterSearch,
         canCloseOutsideBounds: canCloseOutsideBounds,
         futureRequest: (query) {
-          // if (apiType is SearchText) {
-          //   return Api.searchText(
-          //     query,
-          //     location: (apiType as SearchText).location,
-          //     radius: (apiType as SearchText).radius,
-          //     size: (apiType as SearchText).size,
-          //     types: (apiType as SearchText).types,
-          //   );
-          // } else if (apiType is AutoComplete) {
+          if (query.trim().length < 2) {
+            return Future<List<AutoCompleteResults>>.value(const []);
+          }
           return Olamaps.instance.places.getAutocompleteSuggestions(
             input: query,
             language: language,
+            location: location,
           );
         },
         onChanged: onChanged);

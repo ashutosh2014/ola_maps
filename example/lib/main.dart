@@ -74,6 +74,11 @@ class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
   OlaMapController? _controller;
   late final OlaRoutingService _routingService;
   final _searchController = TextEditingController();
+  final _searchFocus = FocusNode();
+  Timer? _searchDebounce;
+  List<AutoCompleteResults> _suggestions = [];
+  bool _applyingSearch = false;
+  OlaLatLng _cameraCenter = OlaMapsDemoData.mapCenter;
 
   String _status = isOlaMapsApiKeyConfigured(kOlaMapsApiKey)
       ? 'Loading Pune demo scene…'
@@ -116,6 +121,7 @@ class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
   void initState() {
     super.initState();
     _routingService = OlaRoutingService(apiKey: kOlaMapsApiKey);
+    _searchController.addListener(_onSearchTextChanged);
     if (!kIsWeb) {
       Permission.location.request();
     }
@@ -124,7 +130,10 @@ class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
   @override
   void dispose() {
     _reverseGeocodeDebounce?.cancel();
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchTextChanged);
     _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -156,6 +165,7 @@ class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
   }
 
   void _onCameraIdle(OlaLatLng position) {
+    _cameraCenter = position;
     if (!_pointerMode) return;
     _reverseGeocodeDebounce?.cancel();
     _reverseGeocodeDebounce = Timer(const Duration(milliseconds: 450), () {
@@ -198,9 +208,109 @@ class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
     }
   }
 
+  void _onSearchTextChanged() {
+    if (_applyingSearch) return;
+    _searchDebounce?.cancel();
+    final query = _searchController.text.trim();
+    if (query.length < 2) {
+      setState(() => _suggestions = []);
+      return;
+    }
+    setState(() {});
+    _searchDebounce = Timer(const Duration(milliseconds: 280), () {
+      _fetchAutocomplete(query);
+    });
+  }
+
+  Future<void> _fetchAutocomplete(String query) async {
+    if (!isOlaMapsApiKeyConfigured(kOlaMapsApiKey)) {
+      return;
+    }
+    setState(() => _searching = true);
+    try {
+      final results = await Olamaps.instance.places.getAutocompleteSuggestions(
+        input: query,
+        location: Location(
+          lat: _cameraCenter.latitude,
+          lng: _cameraCenter.longitude,
+        ),
+        radius: 50000,
+        language: kOlaMapsLanguage,
+      );
+      if (!mounted || _searchController.text.trim() != query) return;
+      setState(() => _suggestions = results);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _suggestions = []);
+      _setStatus('Search failed: $e');
+    } finally {
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  Future<OlaLatLng?> _positionForSuggestion(AutoCompleteResults hit) async {
+    if (hit.geometry.hasCoordinates) {
+      return OlaLatLng(hit.geometry.lat, hit.geometry.lng);
+    }
+    if (hit.placeId.isNotEmpty) {
+      try {
+        final details = await Olamaps.instance.places.getPlaceDetails(
+          placeId: hit.placeId,
+          language: kOlaMapsLanguage,
+        );
+        final loc = details.geometry.location;
+        if (loc.hasCoordinates) {
+          return OlaLatLng(loc.lat, loc.lng);
+        }
+      } catch (_) {}
+    }
+    if (hit.description.isEmpty) return null;
+    final results = await Olamaps.instance.geoencoder.fetchLocation(
+      hit.description,
+      language: kOlaMapsLanguage,
+    );
+    if (results.isEmpty) return null;
+    final loc = results.first.geometry.location;
+    return OlaLatLng(loc.lat, loc.lng);
+  }
+
+  Future<void> _selectSuggestion(AutoCompleteResults hit) async {
+    _searchDebounce?.cancel();
+    _applyingSearch = true;
+    _searchController.value = TextEditingValue(
+      text: hit.description,
+      selection: TextSelection.collapsed(offset: hit.description.length),
+    );
+    _searchFocus.unfocus();
+    setState(() {
+      _suggestions = [];
+      _searching = true;
+      _pointerMode = false;
+    });
+    try {
+      final position = await _positionForSuggestion(hit);
+      if (position == null) {
+        _setStatus('Could not locate "${hit.description}"');
+        return;
+      }
+      await _controller?.zoomToLocation(position, 16);
+      await _applyPinnedLocation(position, hit.description);
+      _setStatus(hit.description);
+    } catch (e) {
+      _setStatus('Search failed: $e');
+    } finally {
+      _applyingSearch = false;
+      if (mounted) setState(() => _searching = false);
+    }
+  }
+
   Future<void> _searchAddress() async {
     final query = _searchController.text.trim();
     if (query.isEmpty || _controller == null) return;
+    if (_suggestions.isNotEmpty) {
+      await _selectSuggestion(_suggestions.first);
+      return;
+    }
     setState(() => _searching = true);
     try {
       final results = await Olamaps.instance.geoencoder.fetchLocation(query);
@@ -749,40 +859,107 @@ class _OlaMapsDemoPageState extends State<OlaMapsDemoPage> {
                   elevation: 3,
                   borderRadius: BorderRadius.circular(14),
                   color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 8),
-                        const Icon(Icons.search, color: Colors.black54),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _searchController,
-                            textInputAction: TextInputAction.search,
-                            decoration: const InputDecoration(
-                              hintText: 'Geocode an address…',
-                              border: InputBorder.none,
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            const Icon(Icons.search, color: Colors.black54),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                focusNode: _searchFocus,
+                                textInputAction: TextInputAction.search,
+                                enabled: isOlaMapsApiKeyConfigured(kOlaMapsApiKey),
+                                decoration: const InputDecoration(
+                                  hintText: 'Search a location…',
+                                  border: InputBorder.none,
+                                ),
+                                onSubmitted: (_) => _searchAddress(),
+                              ),
                             ),
-                            onSubmitted: (_) => _searchAddress(),
+                            if (_searchController.text.isNotEmpty)
+                              IconButton(
+                                tooltip: 'Clear',
+                                onPressed: () {
+                                  _searchDebounce?.cancel();
+                                  _searchController.clear();
+                                  setState(() => _suggestions = []);
+                                },
+                                icon: const Icon(Icons.close, size: 20),
+                              ),
+                            if (_searching)
+                              const Padding(
+                                padding: EdgeInsets.all(12),
+                                child: SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            else
+                              IconButton(
+                                onPressed: _mapReady ? _searchAddress : null,
+                                icon: const Icon(Icons.arrow_forward),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (_suggestions.isNotEmpty)
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 280),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            padding: EdgeInsets.zero,
+                            itemCount: _suggestions.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final hit = _suggestions[index];
+                              final subtitle =
+                                  hit.structuredFormatting.secondaryText;
+                              return ListTile(
+                                dense: true,
+                                leading: const Icon(Icons.place_outlined),
+                                title: Text(
+                                  hit.structuredFormatting.mainText.isNotEmpty
+                                      ? hit.structuredFormatting.mainText
+                                      : hit.description,
+                                ),
+                                subtitle: subtitle.isNotEmpty
+                                    ? Text(
+                                        subtitle,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : hit.description !=
+                                            hit.structuredFormatting.mainText
+                                        ? Text(
+                                            hit.description,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                        : null,
+                                trailing: hit.distanceMeters == null
+                                    ? null
+                                    : Text(
+                                        hit.distanceMeters! >= 1000
+                                            ? '${(hit.distanceMeters! / 1000).toStringAsFixed(1)} km'
+                                            : '${hit.distanceMeters} m',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
+                                      ),
+                                onTap: () => _selectSuggestion(hit),
+                              );
+                            },
                           ),
                         ),
-                        if (_searching)
-                          const Padding(
-                            padding: EdgeInsets.all(12),
-                            child: SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                          )
-                        else
-                          IconButton(
-                            onPressed: _searchAddress,
-                            icon: const Icon(Icons.arrow_forward),
-                          ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -926,7 +1103,7 @@ class _StatusCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              selectedPlace?.title ?? 'Ola Maps · Pune demo',
+              selectedPlace?.title ?? 'Ola Maps',
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,

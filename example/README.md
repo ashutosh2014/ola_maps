@@ -21,3 +21,8 @@ iOS requires 15.0+. The plugin uses Swift Package Manager (`ios/ola_maps/Package
 Web loads `olamaps-web-sdk` from UNPKG in `web/index.html`. Run with `-d chrome`.
 
 The bottom toolbar adds/removes markers, polylines, circles, polygons, bezier curves, clusters, and a directions polyline.
+
+<p align="center">
+  <img src="../screenshots/demo_directions.jpg" width="45%" alt="Directions polyline, markers, and location search" />
+  <img src="../screenshots/demo_search.jpg" width="45%" alt="Location search pin with coverage circle" />
+</p>

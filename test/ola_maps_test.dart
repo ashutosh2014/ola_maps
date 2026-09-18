@@ -68,4 +68,33 @@ void main() {
       contains('3dtiles/tileset.json'),
     );
   });
+
+  test('AutoCompleteResults parses nested and flat geometry', () {
+    final nested = AutoCompleteResults.fromJson({
+      'description': 'Phoenix Mall, Pune',
+      'place_id': 'ola-platform:abc',
+      'geometry': {
+        'location': {'lat': 18.5622, 'lng': 73.9168},
+      },
+      'structured_formatting': {
+        'main_text': 'Phoenix Mall',
+        'secondary_text': 'Pune',
+      },
+    });
+    expect(nested.description, 'Phoenix Mall, Pune');
+    expect(nested.geometry.hasCoordinates, isTrue);
+    expect(nested.geometry.lat, 18.5622);
+
+    final flat = AutoCompleteResults.fromJson({
+      'formatted_address': 'Koregaon Park',
+      'lat': 18.5362,
+      'lng': 73.8938,
+    });
+    expect(flat.description, 'Koregaon Park');
+    expect(flat.geometry.lng, 73.8938);
+
+    expect(flattenPredictions({'0': {'a': 1}}), isNotEmpty);
+    expect(parseStatus('REQUEST_DENIED'), Status.badRequest);
+    expect(parseStatus('something-new'), Status.ok);
+  });
 }
