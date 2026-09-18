@@ -1,24 +1,34 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:ola_maps/src/ola_maps_http.dart';
+import 'package:ola_maps/src/utilities/models.dart';
 
 /// Service for interacting with Ola Maps Routing API
 class OlaRoutingService {
   final String apiKey;
+  late final OlaMapsHttp _http;
 
-  OlaRoutingService({required this.apiKey});
+  OlaRoutingService({required this.apiKey, OlaMapsHttp? httpClient})
+      : _http = httpClient ?? OlaMapsHttp(apiKey: apiKey);
 
-  /// Fetch directions from origin to destination
-  /// Returns list of LatLng points representing the route
+  /// Fetch directions from origin to destination.
   Future<List<Map<String, double>>> getDirections({
     required double originLat,
     required double originLng,
     required double destLat,
     required double destLng,
+    String mode = 'driving',
+    bool alternatives = false,
+    bool steps = false,
   }) async {
     final url = Uri.parse(
       'https://api.olamaps.io/routing/v1/directions'
       '?origin=$originLat,$originLng'
       '&destination=$destLat,$destLng'
+      '&mode=$mode'
+      '&alternatives=$alternatives'
+      '&steps=$steps'
+      '&overview=full'
       '&api_key=$apiKey',
     );
 
@@ -108,5 +118,86 @@ class OlaRoutingService {
     }
 
     return points;
+  }
+
+  Future<Map<String, dynamic>> getDirectionsRaw({
+    required Location origin,
+    required Location destination,
+    String mode = 'driving',
+    bool alternatives = false,
+    bool steps = false,
+    String overview = 'full',
+    bool basic = false,
+    String? requestId,
+    String? correlationId,
+  }) async {
+    final json = await _http.sendJson(
+      'POST',
+      basic ? '/routing/v1/directions/basic' : '/routing/v1/directions',
+      query: {
+        'origin': origin.toString(),
+        'destination': destination.toString(),
+        'mode': mode,
+        'alternatives': alternatives,
+        'steps': steps,
+        'overview': overview,
+      },
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    return Map<String, dynamic>.from(json as Map);
+  }
+
+  Future<Map<String, dynamic>> getDistanceMatrix({
+    required List<Location> origins,
+    required List<Location> destinations,
+    String mode = 'driving',
+    bool basic = false,
+    String? requestId,
+    String? correlationId,
+  }) async {
+    final json = await _http.getJson(
+      basic
+          ? '/routing/v1/distanceMatrix/basic'
+          : '/routing/v1/distanceMatrix',
+      query: {
+        'origins': OlaMapsHttp.encodePoints(origins),
+        'destinations': OlaMapsHttp.encodePoints(destinations),
+        'mode': mode,
+      },
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    return Map<String, dynamic>.from(json as Map);
+  }
+
+  Future<Map<String, dynamic>> optimizeRoute(
+    Map<String, dynamic> body, {
+    String? requestId,
+    String? correlationId,
+  }) async {
+    final json = await _http.sendJson(
+      'POST',
+      '/routing/v1/routeOptimizer',
+      body: body,
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    return Map<String, dynamic>.from(json as Map);
+  }
+
+  Future<Map<String, dynamic>> planFleet(
+    Map<String, dynamic> body, {
+    String? requestId,
+    String? correlationId,
+  }) async {
+    final json = await _http.sendJson(
+      'POST',
+      '/routing/v1/fleetPlanner',
+      body: body,
+      requestId: requestId,
+      correlationId: correlationId,
+    );
+    return Map<String, dynamic>.from(json as Map);
   }
 }

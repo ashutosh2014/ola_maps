@@ -7,5 +7,7 @@ void main() {
     expect(find.text('Ola Maps Example'), findsOneWidget);
     expect(find.text('Places'), findsOneWidget);
     expect(find.text('Coverage'), findsOneWidget);
+    expect(find.text('Circle'), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsOneWidget);
   });
 }

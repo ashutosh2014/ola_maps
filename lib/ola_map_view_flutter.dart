@@ -725,8 +725,15 @@ class OlaMapController {
   }
 }
 
+/// Default vector style used by the Ola Maps iOS SDK (`OlaMapService` tileURL).
+const String kOlaMapsDefaultTileUrl =
+    'https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json';
+
 class OlaMapView extends StatefulWidget {
   final String apiKey;
+  final String tileUrl;
+  final String projectId;
+  final String? userId;
   final void Function(int id)? onMapCreated;
   final void Function(OlaMapController controller)? onControllerReady;
   final void Function(String error)? onMapError;
@@ -745,6 +752,9 @@ class OlaMapView extends StatefulWidget {
   const OlaMapView({
     super.key,
     required this.apiKey,
+    this.tileUrl = kOlaMapsDefaultTileUrl,
+    this.projectId = '',
+    this.userId,
     this.onMapCreated,
     this.onControllerReady,
     this.onMapError,
@@ -790,6 +800,9 @@ class _OlaMapViewState extends State<OlaMapView> {
 
   Map<String, dynamic> get _creationParams => <String, dynamic>{
         'apiKey': widget.apiKey,
+        'tileUrl': widget.tileUrl,
+        'projectId': widget.projectId,
+        'userId': widget.userId,
         'showZoomControls': widget.showZoomControls,
         'showCompass': widget.showCompass,
         'showMyLocationButton': widget.showMyLocationButton,
@@ -842,16 +855,21 @@ class _OlaMapViewState extends State<OlaMapView> {
 
   @override
   Widget build(BuildContext context) {
-    if (defaultTargetPlatform != TargetPlatform.android) {
-      return _errorPane(
-        '${defaultTargetPlatform.name} is not yet supported by the Ola Maps plugin',
-      );
-    }
-
     if (_loadError != null) {
       return _errorPane(_loadError!);
     }
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return _androidView();
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return _iosView();
+    }
+    return _errorPane(
+      '${defaultTargetPlatform.name} is not yet supported by the Ola Maps plugin',
+    );
+  }
 
+  Widget _androidView() {
     return PlatformViewLink(
       viewType: _viewType,
       surfaceFactory: (context, controller) {
@@ -875,6 +893,19 @@ class _OlaMapViewState extends State<OlaMapView> {
         viewController.addOnPlatformViewCreatedListener(_onPlatformViewCreated);
         viewController.create();
         return viewController;
+      },
+    );
+  }
+
+  Widget _iosView() {
+    return UiKitView(
+      viewType: _viewType,
+      layoutDirection: TextDirection.ltr,
+      creationParams: _creationParams,
+      creationParamsCodec: const StandardMessageCodec(),
+      onPlatformViewCreated: _onPlatformViewCreated,
+      gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{
+        Factory<OneSequenceGestureRecognizer>(EagerGestureRecognizer.new),
       },
     );
   }

@@ -5,8 +5,13 @@ enum Status { ok, zeroResults, badRequest }
 Status parseStatus(String status) {
   switch (status.toLowerCase()) {
     case 'ok':
+    case 'success':
+    case 'created':
+    case 'updated':
+    case 'deleted':
       return Status.ok;
     case 'zero_results':
+    case 'zeroresults':
       return Status.zeroResults;
     case 'invalid_request':
     case 'bad_request':

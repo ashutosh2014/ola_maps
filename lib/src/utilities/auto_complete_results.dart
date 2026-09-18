@@ -24,19 +24,36 @@ class AutoCompleteResults {
   });
 
   factory AutoCompleteResults.fromJson(Map<String, dynamic> json) {
+    List<String> asStrings(dynamic value) {
+      if (value is List) return value.map((item) => item.toString()).toList();
+      if (value is String && value.isNotEmpty) return [value];
+      return const [];
+    }
+
     return AutoCompleteResults(
-      reference: json['reference'],
-      types: List<String>.from(json['types']),
-      matchedSubstrings: (json['matched_substrings'] as List)
-          .map((e) => MatchedSubstring.fromJson(e))
+      reference: json['reference']?.toString() ?? '',
+      types: asStrings(json['types']),
+      matchedSubstrings: ((json['matched_substrings'] as List?) ?? const [])
+          .map((e) => MatchedSubstring.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
-      distanceMeters: json['distance_meters'],
-      terms: (json['terms'] as List).map((e) => Term.fromJson(e)).toList(),
-      structuredFormatting:
-          StructuredFormatting.fromJson(json['structured_formatting']),
-      description: json['description'],
-      geometry: Location.fromJson(json['geometry']['location']),
-      placeId: json['place_id'],
+      distanceMeters: (json['distance_meters'] as num?)?.toInt(),
+      terms: ((json['terms'] as List?) ?? const [])
+          .map((e) => Term.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      structuredFormatting: StructuredFormatting.fromJson(
+        Map<String, dynamic>.from(
+          json['structured_formatting'] as Map? ?? const {},
+        ),
+      ),
+      description: json['description']?.toString() ?? '',
+      geometry: Location.fromJson(
+        Map<String, dynamic>.from(
+          (json['geometry'] is Map ? json['geometry']['location'] : null)
+                  as Map? ??
+              const {},
+        ),
+      ),
+      placeId: json['place_id']?.toString() ?? '',
     );
   }
 

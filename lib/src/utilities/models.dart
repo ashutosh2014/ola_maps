@@ -23,17 +23,26 @@ class Address {
   });
 
   factory Address.fromJson(Map<String, dynamic> json) {
+    final components = json['address_components'] as List? ?? const [];
     return Address(
-      formattedAddress: json['formatted_address'],
-      types: List<String>.from(json['types']),
-      name: json['name'],
-      geometry: Geometry.fromJson(json['geometry']),
-      addressComponents: (json['address_components'] as List)
-          .map((i) => AddressComponent.fromJson(i))
+      formattedAddress: json['formatted_address']?.toString() ?? '',
+      types: List<String>.from(json['types'] ?? const []),
+      name: json['name']?.toString() ??
+          json['formatted_address']?.toString() ??
+          '',
+      geometry: Geometry.fromJson(
+        Map<String, dynamic>.from(json['geometry'] as Map? ?? const {}),
+      ),
+      addressComponents: components
+          .map((item) => AddressComponent.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ))
           .toList(),
-      plusCode: PlusCode.fromJson(json['plus_code']),
-      placeId: json['place_id'],
-      layer: List<String>.from(json['layer']),
+      plusCode: json['plus_code'] is Map
+          ? PlusCode.fromJson(Map<String, dynamic>.from(json['plus_code'] as Map))
+          : PlusCode(compoundCode: '', globalCode: ''),
+      placeId: json['place_id']?.toString() ?? '',
+      layer: List<String>.from(json['layer'] ?? const []),
     );
   }
 
@@ -63,10 +72,16 @@ class Geometry {
   });
 
   factory Geometry.fromJson(Map<String, dynamic> json) {
+    final locationJson = Map<String, dynamic>.from(
+      json['location'] as Map? ?? const {'lat': 0, 'lng': 0},
+    );
+    final location = Location.fromJson(locationJson);
     return Geometry(
-      viewport: Viewport.fromJson(json['viewport']),
-      location: Location.fromJson(json['location']),
-      locationType: json['location_type'],
+      viewport: json['viewport'] is Map
+          ? Viewport.fromJson(Map<String, dynamic>.from(json['viewport'] as Map))
+          : Viewport(southwest: location, northeast: location),
+      location: location,
+      locationType: json['location_type']?.toString(),
     );
   }
 
@@ -114,8 +129,12 @@ class Location {
 
   factory Location.fromJson(Map<String, dynamic> json) {
     return Location(
-      lng: json['lng'],
-      lat: json['lat'],
+      lng: (json['lng'] as num?)?.toDouble() ??
+          (json['longitude'] as num?)?.toDouble() ??
+          0,
+      lat: (json['lat'] as num?)?.toDouble() ??
+          (json['latitude'] as num?)?.toDouble() ??
+          0,
     );
   }
 
@@ -145,9 +164,9 @@ class AddressComponent {
 
   factory AddressComponent.fromJson(Map<String, dynamic> json) {
     return AddressComponent(
-      types: List<String>.from(json['types']),
-      shortName: json['short_name'],
-      longName: json['long_name'],
+      types: List<String>.from(json['types'] ?? const []),
+      shortName: json['short_name']?.toString() ?? '',
+      longName: json['long_name']?.toString() ?? '',
     );
   }
 
@@ -171,8 +190,8 @@ class PlusCode {
 
   factory PlusCode.fromJson(Map<String, dynamic> json) {
     return PlusCode(
-      compoundCode: json['compound_code'],
-      globalCode: json['global_code'],
+      compoundCode: json['compound_code']?.toString() ?? '',
+      globalCode: json['global_code']?.toString() ?? '',
     );
   }
 
@@ -200,12 +219,16 @@ class TextSearchPrediction {
   });
 
   factory TextSearchPrediction.fromJson(Map<String, dynamic> json) {
+    final geometry = json['geometry'];
+    final locationJson = geometry is Map ? geometry['location'] : null;
     return TextSearchPrediction(
-      formattedAddress: json['formatted_address'],
-      geometry: Location.fromJson(json['geometry']['location']),
-      placeId: json['place_id'],
-      name: json['name'],
-      types: List<String>.from(json['types']),
+      formattedAddress: json['formatted_address']?.toString() ?? '',
+      geometry: Location.fromJson(
+        Map<String, dynamic>.from(locationJson as Map? ?? const {}),
+      ),
+      placeId: json['place_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      types: List<String>.from(json['types'] ?? const []),
     );
   }
 
@@ -252,6 +275,14 @@ class PlaceDetails {
   final String priceLevel;
   final List<dynamic> photos;
   final String adrAddress;
+  final List<dynamic> amenitiesAvailable;
+  final bool wheelchairAccessibility;
+  final bool parkingAvailable;
+  final bool isLandmark;
+  final String landmarkType;
+  final String paymentMode;
+  final List<dynamic> popularItems;
+  final dynamic languageSpoken;
 
   PlaceDetails({
     required this.addressComponents,
@@ -280,39 +311,67 @@ class PlaceDetails {
     required this.priceLevel,
     required this.photos,
     required this.adrAddress,
+    this.amenitiesAvailable = const [],
+    this.wheelchairAccessibility = false,
+    this.parkingAvailable = false,
+    this.isLandmark = false,
+    this.landmarkType = '',
+    this.paymentMode = '',
+    this.popularItems = const [],
+    this.languageSpoken,
   });
 
   factory PlaceDetails.fromJson(Map<String, dynamic> json) {
     return PlaceDetails(
-      addressComponents: (json['address_components'] as List)
-          .map((e) => AddressComponent.fromJson(e))
+      addressComponents: ((json['address_components'] as List?) ?? const [])
+          .map((e) => AddressComponent.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList(),
-      formattedAddress: json['formatted_address'],
-      geometry: Geometry.fromJson(json['geometry']),
-      placeId: json['place_id'],
-      reference: json['reference'],
-      businessStatus: json['business_status'],
-      formattedPhoneNumber: json['formatted_phone_number'],
-      icon: json['icon'],
-      iconBackgroundColor: json['icon_background_color'],
-      iconMaskBaseUri: json['icon_mask_base_uri'],
-      internationalPhoneNumber: json['international_phone_number'],
-      name: json['name'],
-      openingHours: OpeningHours.fromJson(json['opening_hours']),
-      plusCode: PlusCode.fromJson(json['plus_code']),
-      rating: json['rating'].toDouble(),
-      reviews:
-          (json['reviews'] as List).map((e) => Review.fromJson(e)).toList(),
-      types: List<String>.from(json['types']),
-      layer: List<String>.from(json['layer']),
-      url: json['url'],
-      userRatingsTotal: json['user_ratings_total'],
-      utcOffset: json['utc_offset'],
-      vicinity: json['vicinity'],
-      website: json['website'],
-      priceLevel: json['price_level'],
+      formattedAddress: json['formatted_address']?.toString() ?? '',
+      geometry: Geometry.fromJson(
+        Map<String, dynamic>.from(json['geometry'] as Map? ?? const {}),
+      ),
+      placeId: json['place_id']?.toString() ?? '',
+      reference: json['reference']?.toString() ?? '',
+      businessStatus: json['business_status']?.toString() ?? '',
+      formattedPhoneNumber: json['formatted_phone_number']?.toString() ?? '',
+      icon: json['icon']?.toString() ?? '',
+      iconBackgroundColor: json['icon_background_color']?.toString() ?? '',
+      iconMaskBaseUri: json['icon_mask_base_uri']?.toString() ?? '',
+      internationalPhoneNumber:
+          json['international_phone_number']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      openingHours: json['opening_hours'] is Map
+          ? OpeningHours.fromJson(
+              Map<String, dynamic>.from(json['opening_hours'] as Map),
+            )
+          : OpeningHours(openNow: false, periods: const [], weekdayText: const []),
+      plusCode: json['plus_code'] is Map
+          ? PlusCode.fromJson(Map<String, dynamic>.from(json['plus_code'] as Map))
+          : PlusCode(compoundCode: '', globalCode: ''),
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      reviews: ((json['reviews'] as List?) ?? const [])
+          .map((e) => Review.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      types: List<String>.from(json['types'] ?? const []),
+      layer: List<String>.from(json['layer'] ?? const []),
+      url: json['url']?.toString() ?? '',
+      userRatingsTotal: (json['user_ratings_total'] as num?)?.toInt() ?? 0,
+      utcOffset: (json['utc_offset'] as num?)?.toInt() ?? 0,
+      vicinity: json['vicinity']?.toString() ?? '',
+      website: json['website']?.toString() ?? '',
+      priceLevel: json['price_level']?.toString() ?? '',
       photos: json['photos'] ?? [],
-      adrAddress: json['adr_address'],
+      adrAddress: json['adr_address']?.toString() ?? '',
+      amenitiesAvailable: json['amenities_available'] as List? ?? const [],
+      wheelchairAccessibility: json['wheelchair_accessibility'] == true ||
+          json['wheelchair_accessibility']?.toString() == 'yes',
+      parkingAvailable: json['parking_available'] == true ||
+          json['parking_available']?.toString() == 'yes',
+      isLandmark: json['is_landmark'] == true,
+      landmarkType: json['landmark_type']?.toString() ?? '',
+      paymentMode: json['payment_mode']?.toString() ?? '',
+      popularItems: json['popular_items'] as List? ?? const [],
+      languageSpoken: json['language_spoken'],
     );
   }
 
@@ -344,6 +403,14 @@ class PlaceDetails {
       'price_level': priceLevel,
       'photos': photos,
       'adr_address': adrAddress,
+      'amenities_available': amenitiesAvailable,
+      'wheelchair_accessibility': wheelchairAccessibility,
+      'parking_available': parkingAvailable,
+      'is_landmark': isLandmark,
+      'landmark_type': landmarkType,
+      'payment_mode': paymentMode,
+      'popular_items': popularItems,
+      'language_spoken': languageSpoken,
     };
   }
 
@@ -365,10 +432,11 @@ class OpeningHours {
 
   factory OpeningHours.fromJson(Map<String, dynamic> json) {
     return OpeningHours(
-      openNow: json['open_now'],
-      periods:
-          (json['periods'] as List).map((e) => Period.fromJson(e)).toList(),
-      weekdayText: List<String>.from(json['weekday_text']),
+      openNow: json['open_now'] == true,
+      periods: ((json['periods'] as List?) ?? const [])
+          .map((e) => Period.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      weekdayText: List<String>.from(json['weekday_text'] ?? const []),
     );
   }
 
@@ -389,8 +457,12 @@ class Period {
 
   factory Period.fromJson(Map<String, dynamic> json) {
     return Period(
-      close: Time.fromJson(json['close']),
-      open: Time.fromJson(json['open']),
+      close: Time.fromJson(
+        Map<String, dynamic>.from(json['close'] as Map? ?? const {}),
+      ),
+      open: Time.fromJson(
+        Map<String, dynamic>.from(json['open'] as Map? ?? const {}),
+      ),
     );
   }
 
@@ -410,8 +482,8 @@ class Time {
 
   factory Time.fromJson(Map<String, dynamic> json) {
     return Time(
-      day: json['day'],
-      time: json['time'],
+      day: (json['day'] as num?)?.toInt() ?? 0,
+      time: json['time']?.toString() ?? '',
     );
   }
 

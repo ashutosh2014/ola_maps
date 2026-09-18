@@ -13,3 +13,15 @@ class BadRequestException extends ApiException {
 class ServerException extends ApiException {
   ServerException(super.message);
 }
+
+class NotFoundException extends ApiException {
+  NotFoundException(super.message);
+}
+
+class UnauthorizedException extends ApiException {
+  UnauthorizedException(super.message);
+}
+
+class UnprocessableException extends ApiException {
+  UnprocessableException(super.message);
+}
