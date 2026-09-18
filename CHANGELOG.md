@@ -1,3 +1,7 @@
+## 0.3.2
+
+* Use absolute GitHub image URLs in the README so screenshots render on pub.dev (relative paths are stripped until repository verification finishes).
+
 ## 0.3.1
 
 * Show example app screenshots in the README using Markdown images so they render on [pub.dev](https://pub.dev/packages/ola_maps).

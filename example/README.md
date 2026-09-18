@@ -22,6 +22,7 @@ Web loads `olamaps-web-sdk` from UNPKG in `web/index.html`. Run with `-d chrome`
 
 The bottom toolbar adds/removes markers, polylines, circles, polygons, bezier curves, clusters, and a directions polyline.
 
-| Directions | Search |
-| --- | --- |
-| ![Directions polyline, markers, and location search](../screenshots/demo_directions.jpg) | ![Location search pin with coverage circle](../screenshots/demo_search.jpg) |
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ashutosh2014/ola_maps/main/screenshots/demo_directions.jpg" width="280" alt="Directions polyline, markers, and location search" />
+  <img src="https://raw.githubusercontent.com/ashutosh2014/ola_maps/main/screenshots/demo_search.jpg" width="280" alt="Location search pin with coverage circle" />
+</p>
