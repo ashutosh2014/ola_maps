@@ -1,7 +1,9 @@
 import 'package:ola_maps/src/ola_maps_http.dart';
 import 'package:ola_maps/src/utilities/rest_models.dart';
 
+/// Street View coverage, image ids, and metadata.
 class OlaMapsStreetView {
+  /// Creates a Street View client. Pass [http] to share language defaults.
   OlaMapsStreetView({required String apiKey, OlaMapsHttp? http})
       : _http = http ?? OlaMapsHttp(apiKey: apiKey);
 
@@ -29,6 +31,7 @@ class OlaMapsStreetView {
     );
   }
 
+  /// Nearest panorama id to a coordinate.
   Future<StreetViewImageId> nearestImageId({
     required double latitude,
     required double longitude,
@@ -49,6 +52,7 @@ class OlaMapsStreetView {
     return StreetViewImageId.fromJson(_asMap(json));
   }
 
+  /// Metadata for a panorama [imageId].
   Future<StreetViewMetadata> metadata(
     String imageId, {
     String? requestId,

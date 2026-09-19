@@ -1,5 +1,16 @@
-enum Status { ok, zeroResults, badRequest }
+/// Outcome flag used by Places and Geocode JSON envelopes.
+enum Status {
+  /// The request succeeded.
+  ok,
 
+  /// The request succeeded but returned no rows.
+  zeroResults,
+
+  /// The request was rejected (invalid, denied, or quota).
+  badRequest,
+}
+
+/// Maps an Ola Maps `status` string to [Status]. Unknown values become [Status.ok].
 Status parseStatus(String status) {
   switch (status.toLowerCase().trim()) {
     case 'ok':

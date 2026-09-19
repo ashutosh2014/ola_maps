@@ -3,37 +3,91 @@
 class OlaMapsLanguage {
   const OlaMapsLanguage._(this.code, this.name, this.script, this.example);
 
+  /// ISO 639-1 code (`en`, `hi`, …).
   final String code;
+
+  /// English display name.
   final String name;
+
+  /// Writing system used by this language.
   final String script;
+
+  /// Sample localized place-type string.
   final String example;
 
+  /// English (`en`).
   static const en = OlaMapsLanguage._('en', 'English', 'Latin', 'Restaurant');
+
+  /// Hindi (`hi`).
   static const hi = OlaMapsLanguage._('hi', 'Hindi', 'Devanagari', 'रेस्टोरेंट');
+
+  /// Kannada (`kn`).
   static const kn = OlaMapsLanguage._('kn', 'Kannada', 'Kannada', 'ರೆಸ್ಟೋರೆಂಟ್');
+
+  /// Telugu (`te`).
   static const te = OlaMapsLanguage._('te', 'Telugu', 'Telugu', 'రెస్టారెంట్');
+
+  /// Tamil (`ta`).
   static const ta = OlaMapsLanguage._('ta', 'Tamil', 'Tamil', 'உணவகம்');
+
+  /// Malayalam (`ml`).
   static const ml = OlaMapsLanguage._('ml', 'Malayalam', 'Malayalam', 'റെസ്റ്റോറന്റ്');
+
+  /// Sanskrit (`sa`).
   static const sa = OlaMapsLanguage._('sa', 'Sanskrit', 'Devanagari', 'भोजनालयः');
+
+  /// Bengali (`bn`).
   static const bn = OlaMapsLanguage._('bn', 'Bengali', 'Bengali', 'রেস্তোরাঁ');
+
+  /// Gujarati (`gu`).
   static const gu = OlaMapsLanguage._('gu', 'Gujarati', 'Gujarati', 'રેસ્ટોરન્ટ');
+
+  /// Marathi (`mr`).
   static const mr = OlaMapsLanguage._('mr', 'Marathi', 'Devanagari', 'उपहारगृह');
+
+  /// Odia (`or`).
   static const or = OlaMapsLanguage._('or', 'Odia', 'Odia', 'ରେଷ୍ଟୁରାଣ୍ଟ');
+
+  /// Urdu (`ur`).
   static const ur = OlaMapsLanguage._('ur', 'Urdu', 'Arabic', 'ریستوراں');
 
+  /// Alias for [en].
   static const english = en;
+
+  /// Alias for [hi].
   static const hindi = hi;
+
+  /// Alias for [kn].
   static const kannada = kn;
+
+  /// Alias for [te].
   static const telugu = te;
+
+  /// Alias for [ta].
   static const tamil = ta;
+
+  /// Alias for [ml].
   static const malayalam = ml;
+
+  /// Alias for [sa].
   static const sanskrit = sa;
+
+  /// Alias for [bn].
   static const bengali = bn;
+
+  /// Alias for [gu].
   static const gujarati = gu;
+
+  /// Alias for [mr].
   static const marathi = mr;
+
+  /// Alias for [or].
   static const odia = or;
+
+  /// Alias for [ur].
   static const urdu = ur;
 
+  /// Every supported [OlaMapsLanguage].
   static const values = <OlaMapsLanguage>[
     en,
     hi,
@@ -49,12 +103,18 @@ class OlaMapsLanguage {
     ur,
   ];
 
+  /// Lookup table keyed by ISO 639-1 code.
   static final Map<String, OlaMapsLanguage> byCode = {
     for (final language in values) language.code: language,
   };
 
+  /// Default ISO 639-1 code (`en`).
   static const defaultCode = 'en';
+
+  /// Light vector style id without a language suffix.
   static const lightStandardStyle = 'default-light-standard';
+
+  /// Dark vector style id without a language suffix.
   static const darkStandardStyle = 'default-dark-standard';
 
   /// Two-letter code for query/body `language`. Unknown values are kept as-is
@@ -66,6 +126,7 @@ class OlaMapsLanguage {
     return raw;
   }
 
+  /// Whether [language] is one of the 12 dashboard-supported codes.
   static bool isSupported(Object? language) {
     return byCode.containsKey(codeOf(language));
   }
@@ -91,6 +152,7 @@ class OlaMapsLanguage {
     return '$base-$code';
   }
 
+  /// Full `style.json` URL for [language] (light or [dark]).
   static String dynamicMapStyleUrl({
     Object? language,
     bool dark = false,

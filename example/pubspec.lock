@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: animated_custom_dropdown
-      sha256: "5a72dc209041bb53f6c7164bc2e366552d5197cdb032b1c9b2c36e3013024486"
+      sha256: "95ae9edcdcc788e82de4bcf5577d0cac2c7a381bdda66186bb945991dd43478c"
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.1"
+    version: "4.0.0"
   async:
     dependency: transitive
     description:
@@ -110,10 +110,10 @@ packages:
     dependency: transitive
     description:
       name: http
-      sha256: b9c29a161230ee03d3ccf545097fccd9b87a5264228c5d348202e0f0c28f9010
+      sha256: "87721a4a50b19c7f1d49001e51409bddc46303966ce89a65af4f4e6004896412"
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.2"
+    version: "1.6.0"
   http_parser:
     dependency: transitive
     description:
@@ -189,7 +189,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.3.0"
+    version: "0.3.3"
   path:
     dependency: transitive
     description:

@@ -66,22 +66,34 @@ class OlaMapPlatformView(
         mapInstances[id] = this
 
         val apiKey = FlutterArgs.mapString(creationParams, "apiKey")?.trim().orEmpty()
+        val tileUrl = FlutterArgs.mapString(creationParams, "tileUrl")
+        val usesProxy = OlaMapsHttpProxy.usesBackendProxy(tileUrl)
 
         mapView.layoutParams = FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT,
             FrameLayout.LayoutParams.MATCH_PARENT,
         )
 
-        if (apiKey.isEmpty() || apiKey == "YOUR_API_KEY" || apiKey == "YOUR_OLA_MAPS_API_KEY") {
+        val resolvedKey = when {
+            apiKey.isNotEmpty() &&
+                apiKey != "YOUR_API_KEY" &&
+                apiKey != "YOUR_OLA_MAPS_API_KEY" -> apiKey
+            usesProxy -> "proxy"
+            else -> ""
+        }
+
+        if (resolvedKey.isEmpty()) {
             notifyMapError(
                 "loading style failed: HTTP status code 403 (missing Ola Maps API key)",
             )
         } else {
-            initializeMap(apiKey, creationParams)
+            initializeMap(resolvedKey, creationParams)
         }
     }
 
     private fun initializeMap(apiKey: String, creationParams: Map<String, Any?>?) {
+        val tileUrl = FlutterArgs.mapString(creationParams, "tileUrl")
+        // Install before and after getMap: the SDK replaces MapLibre's OkHttp client.
         val zoomGesturesEnabled = FlutterArgs.mapBool(creationParams, "zoomGesturesEnabled", true)
         val scrollGesturesEnabled = FlutterArgs.mapBool(creationParams, "scrollGesturesEnabled", true)
         val tiltGesturesEnabled = FlutterArgs.mapBool(creationParams, "tiltGesturesEnabled", true)
@@ -140,6 +152,7 @@ class OlaMapPlatformView(
             },
             mapControlSettings = mapControlSettings,
         )
+        OlaMapsHttpProxy.install(context, tileUrl)
     }
 
     private fun bindListeners(olaMap: OlaMap) {

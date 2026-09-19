@@ -2,12 +2,15 @@ import 'package:ola_maps/src/ola_maps_http.dart';
 import 'package:ola_maps/src/utilities/models.dart';
 import 'package:ola_maps/src/utilities/rest_models.dart';
 
+/// Geofence CRUD and point-in-fence checks.
 class OlaMapsGeofence {
+  /// Creates a geofence client. Pass [http] to share language defaults.
   OlaMapsGeofence({required String apiKey, OlaMapsHttp? http})
       : _http = http ?? OlaMapsHttp(apiKey: apiKey);
 
   final OlaMapsHttp _http;
 
+  /// Creates a fence in the project from [request].
   Future<Geofence> create(
     GeofenceRequest request, {
     String? requestId,
@@ -23,6 +26,7 @@ class OlaMapsGeofence {
     return Geofence.fromJson(Map<String, dynamic>.from(json as Map));
   }
 
+  /// Replaces the fence identified by [id].
   Future<Geofence> update(
     String id,
     GeofenceRequest request, {
@@ -39,6 +43,7 @@ class OlaMapsGeofence {
     return Geofence.fromJson(Map<String, dynamic>.from(json as Map));
   }
 
+  /// Fetches a fence by id.
   Future<Geofence> getById(
     String id, {
     String? requestId,
@@ -52,6 +57,7 @@ class OlaMapsGeofence {
     return Geofence.fromJson(Map<String, dynamic>.from(json as Map));
   }
 
+  /// Deletes a fence by id.
   Future<Geofence> delete(
     String id, {
     String? requestId,
@@ -66,6 +72,7 @@ class OlaMapsGeofence {
     return Geofence.fromJson(Map<String, dynamic>.from(json as Map));
   }
 
+  /// Paged list of fences for [projectId].
   Future<GeofenceListResult> list({
     required String projectId,
     int page = 1,
@@ -86,6 +93,7 @@ class OlaMapsGeofence {
     return GeofenceListResult.fromJson(Map<String, dynamic>.from(json as Map));
   }
 
+  /// Whether [coordinates] is inside [geofenceId].
   Future<GeofenceStatus> status({
     required String geofenceId,
     required Location coordinates,

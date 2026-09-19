@@ -4,10 +4,15 @@ import 'package:ola_maps/src/ola_maps_http.dart';
 import 'package:ola_maps/src/utilities/ola_maps_language.dart';
 import 'package:ola_maps/src/utilities/rest_models.dart';
 
+/// Static maps, style URLs, and 3D tileset helpers.
 class OlaMapsTiles {
+  /// Light `default-light-standard` style id.
   static const lightStandard = OlaMapsLanguage.lightStandardStyle;
+
+  /// Dark `default-dark-standard` style id.
   static const darkStandard = OlaMapsLanguage.darkStandardStyle;
 
+  /// Creates a tiles client. Pass [http] to share language defaults.
   OlaMapsTiles({required String apiKey, OlaMapsHttp? http})
       : _http = http ?? OlaMapsHttp(apiKey: apiKey);
 
@@ -27,6 +32,7 @@ class OlaMapsTiles {
     );
   }
 
+  /// Style id for [language], optionally [dark].
   String styleName({
     Object? language,
     bool dark = false,
@@ -39,6 +45,7 @@ class OlaMapsTiles {
     );
   }
 
+  /// Styles published for this API key.
   Future<List<MapStyleInfo>> listStyles({
     String? requestId,
     String? correlationId,
@@ -55,6 +62,7 @@ class OlaMapsTiles {
         .toList();
   }
 
+  /// Static map image centered on a coordinate.
   Future<Uint8List> staticMapByCenter({
     required double longitude,
     required double latitude,
@@ -86,6 +94,7 @@ class OlaMapsTiles {
     );
   }
 
+  /// Static map image fitted to a bounding box.
   Future<Uint8List> staticMapByBounds({
     required double minLongitude,
     required double minLatitude,
@@ -118,6 +127,7 @@ class OlaMapsTiles {
     );
   }
 
+  /// Static map image fitted to a polyline [path].
   Future<Uint8List> staticMapByPath({
     required String path,
     int width = 800,
@@ -146,6 +156,7 @@ class OlaMapsTiles {
     );
   }
 
+  /// 3D tileset JSON used by the Web SDK.
   Future<Map<String, dynamic>> tileset3d({
     String? requestId,
     String? correlationId,

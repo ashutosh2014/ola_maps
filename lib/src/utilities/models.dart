@@ -1,16 +1,33 @@
 export 'near_by_place_details.dart';
 export 'auto_complete_results.dart';
 
+/// Geocoded place returned by Places / Geocode APIs.
 class Address {
+  /// Single-line display address.
   String formattedAddress;
+
+  /// Place-type tags (`street_address`, `establishment`, …).
   List<String> types;
+
+  /// Human-readable place name.
   String name;
+
+  /// Coordinate and viewport.
   Geometry geometry;
+
+  /// Structured address parts.
   List<AddressComponent> addressComponents;
+
+  /// Open Location Code for this place.
   PlusCode plusCode;
+
+  /// Ola Maps place id.
   String placeId;
+
+  /// Map-data layers this result belongs to.
   List<String> layer;
 
+  /// Creates an address model.
   Address({
     required this.formattedAddress,
     required this.types,
@@ -22,6 +39,7 @@ class Address {
     required this.layer,
   });
 
+  /// Parses an address from a Places / Geocode JSON object.
   factory Address.fromJson(Map<String, dynamic> json) {
     final components = json['address_components'] as List? ?? const [];
     return Address(
@@ -46,6 +64,7 @@ class Address {
     );
   }
 
+  /// Serializes this address to the Places JSON shape.
   Map<String, dynamic> toJson() {
     return {
       'formatted_address': formattedAddress,
@@ -60,17 +79,25 @@ class Address {
   }
 }
 
+/// Coordinate plus optional viewport for a place.
 class Geometry {
+  /// Bounding box suggested for camera fit.
   Viewport viewport;
+
+  /// Pin coordinate.
   Location location;
+
+  /// Geocoder location type (`ROOFTOP`, `APPROXIMATE`, …).
   String? locationType;
 
+  /// Creates a geometry object.
   Geometry({
     required this.viewport,
     required this.location,
     required this.locationType,
   });
 
+  /// Parses `{viewport, location, location_type}`.
   factory Geometry.fromJson(Map<String, dynamic> json) {
     final locationJson = Map<String, dynamic>.from(
       json['location'] as Map? ?? const {'lat': 0, 'lng': 0},
@@ -85,6 +112,7 @@ class Geometry {
     );
   }
 
+  /// Serializes viewport, location, and type.
   Map<String, dynamic> toJson() {
     return {
       'viewport': viewport.toJson(),
@@ -94,15 +122,21 @@ class Geometry {
   }
 }
 
+/// Southwest / northeast pair describing a map bounds.
 class Viewport {
+  /// Lower-left corner.
   Location southwest;
+
+  /// Upper-right corner.
   Location northeast;
 
+  /// Creates a viewport from two corners.
   Viewport({
     required this.southwest,
     required this.northeast,
   });
 
+  /// Parses `{southwest, northeast}`.
   factory Viewport.fromJson(Map<String, dynamic> json) {
     return Viewport(
       southwest: Location.fromJson(json['southwest']),
@@ -110,6 +144,7 @@ class Viewport {
     );
   }
 
+  /// Serializes both corners.
   Map<String, dynamic> toJson() {
     return {
       'southwest': southwest.toJson(),
@@ -118,15 +153,21 @@ class Viewport {
   }
 }
 
+/// Latitude / longitude used by Places and Routing HTTP APIs.
 class Location {
+  /// Degrees east of the prime meridian.
   double lng;
+
+  /// Degrees north of the equator.
   double lat;
 
+  /// Creates a WGS84 point. Note argument order is `[lng], [lat]`.
   Location({
     required this.lng,
     required this.lat,
   });
 
+  /// Parses `lat`/`lng` or `latitude`/`longitude`.
   factory Location.fromJson(Map<String, dynamic> json) {
     return Location(
       lng: (json['lng'] as num?)?.toDouble() ??
@@ -138,8 +179,10 @@ class Location {
     );
   }
 
+  /// True when this is not the `(0, 0)` fallback used for missing geometry.
   bool get hasCoordinates => lat != 0 || lng != 0;
 
+  /// Serializes `{lat, lng}`.
   Map<String, dynamic> toJson() {
     return {
       'lng': lng,
@@ -153,17 +196,25 @@ class Location {
   }
 }
 
+/// One structured part of an [Address] (city, postal code, …).
 class AddressComponent {
+  /// Component types (`locality`, `postal_code`, …).
   List<String> types;
+
+  /// Abbreviated label.
   String shortName;
+
+  /// Full label.
   String longName;
 
+  /// Creates an address component.
   AddressComponent({
     required this.types,
     required this.shortName,
     required this.longName,
   });
 
+  /// Parses `{types, short_name, long_name}`.
   factory AddressComponent.fromJson(Map<String, dynamic> json) {
     return AddressComponent(
       types: List<String>.from(json['types'] ?? const []),
@@ -172,6 +223,7 @@ class AddressComponent {
     );
   }
 
+  /// Serializes this component.
   Map<String, dynamic> toJson() {
     return {
       'types': types,
@@ -181,15 +233,21 @@ class AddressComponent {
   }
 }
 
+/// Open Location Code (Plus Code) for a place.
 class PlusCode {
+  /// Area-relative code.
   String compoundCode;
+
+  /// Global Plus Code.
   String globalCode;
 
+  /// Creates a Plus Code pair.
   PlusCode({
     required this.compoundCode,
     required this.globalCode,
   });
 
+  /// Parses `{compound_code, global_code}`.
   factory PlusCode.fromJson(Map<String, dynamic> json) {
     return PlusCode(
       compoundCode: json['compound_code']?.toString() ?? '',
@@ -197,6 +255,7 @@ class PlusCode {
     );
   }
 
+  /// Serializes both codes.
   Map<String, dynamic> toJson() {
     return {
       'compound_code': compoundCode,
@@ -205,13 +264,24 @@ class PlusCode {
   }
 }
 
+/// One row from Places text search.
 class TextSearchPrediction {
+  /// Formatted address line.
   final String formattedAddress;
+
+  /// Result coordinate.
   final Location geometry;
+
+  /// Ola Maps place id.
   final String placeId;
+
+  /// Place name.
   final String name;
+
+  /// Place-type tags.
   final List<String> types;
 
+  /// Creates a text-search row.
   TextSearchPrediction({
     required this.formattedAddress,
     required this.geometry,
@@ -220,6 +290,7 @@ class TextSearchPrediction {
     required this.types,
   });
 
+  /// Parses a text-search prediction JSON object.
   factory TextSearchPrediction.fromJson(Map<String, dynamic> json) {
     final geometry = json['geometry'];
     final locationJson = geometry is Map ? geometry['location'] : null;
@@ -234,6 +305,7 @@ class TextSearchPrediction {
     );
   }
 
+  /// Serializes this prediction.
   Map<String, dynamic> toJson() {
     return {
       'formatted_address': formattedAddress,
@@ -250,42 +322,111 @@ class TextSearchPrediction {
   }
 }
 
+/// Full place record from Place Details.
 class PlaceDetails {
+  /// Structured address parts.
   final List<AddressComponent> addressComponents;
+
+  /// Single-line display address.
   final String formattedAddress;
+
+  /// Coordinate and viewport.
   final Geometry geometry;
+
+  /// Ola Maps place id.
   final String placeId;
+
+  /// Alternate place reference token.
   final String reference;
+
+  /// Business open/closed status.
   final String businessStatus;
+
+  /// Local formatted phone number.
   final String formattedPhoneNumber;
+
+  /// Icon URL.
   final String icon;
+
+  /// Icon background color hex.
   final String iconBackgroundColor;
+
+  /// Icon mask URI.
   final String iconMaskBaseUri;
+
+  /// International formatted phone number.
   final String internationalPhoneNumber;
+
+  /// Place name.
   final String name;
+
+  /// Opening hours, if published.
   final OpeningHours openingHours;
+
+  /// Open Location Code.
   final PlusCode plusCode;
+
+  /// Average user rating.
   final double rating;
+
+  /// User reviews.
   final List<Review> reviews;
+
+  /// Place-type tags.
   final List<String> types;
+
+  /// Map-data layers.
   final List<String> layer;
+
+  /// Maps URL for this place.
   final String url;
+
+  /// Number of user ratings.
   final int userRatingsTotal;
+
+  /// UTC offset in minutes.
   final int utcOffset;
+
+  /// Neighborhood / vicinity label.
   final String vicinity;
+
+  /// Website URL.
   final String website;
+
+  /// Price-level label.
   final String priceLevel;
+
+  /// Photo metadata list.
   final List<dynamic> photos;
+
+  /// Address in microformat (`adr`).
   final String adrAddress;
+
+  /// Amenities advertised by the place.
   final List<dynamic> amenitiesAvailable;
+
+  /// Wheelchair access flag.
   final bool wheelchairAccessibility;
+
+  /// Parking flag.
   final bool parkingAvailable;
+
+  /// Whether this is classified as a landmark.
   final bool isLandmark;
+
+  /// Landmark category.
   final String landmarkType;
+
+  /// Accepted payment modes.
   final String paymentMode;
+
+  /// Popular menu or catalog items.
   final List<dynamic> popularItems;
+
+  /// Languages spoken at the venue.
   final dynamic languageSpoken;
 
+  /// Creates a place-details record.
   PlaceDetails({
     required this.addressComponents,
     required this.formattedAddress,
@@ -323,6 +464,7 @@ class PlaceDetails {
     this.languageSpoken,
   });
 
+  /// Parses a Place Details JSON object.
   factory PlaceDetails.fromJson(Map<String, dynamic> json) {
     return PlaceDetails(
       addressComponents: ((json['address_components'] as List?) ?? const [])
@@ -377,6 +519,7 @@ class PlaceDetails {
     );
   }
 
+  /// Serializes this place to the Place Details JSON shape.
   Map<String, dynamic> toJson() {
     return {
       'address_components': addressComponents.map((e) => e.toJson()).toList(),
@@ -422,16 +565,24 @@ class PlaceDetails {
   }
 }
 
+/// Published hours for a [PlaceDetails] result.
 class OpeningHours {
+  /// Whether the place is open at request time.
   final bool openNow;
+
+  /// Open/close windows by weekday.
   final List<Period> periods;
+
+  /// Localized weekday strings.
   final List<String> weekdayText;
 
+  /// Creates opening-hours data.
   OpeningHours(
       {required this.openNow,
       required this.periods,
       required this.weekdayText});
 
+  /// Parses `{open_now, periods, weekday_text}`.
   factory OpeningHours.fromJson(Map<String, dynamic> json) {
     return OpeningHours(
       openNow: json['open_now'] == true,
@@ -442,6 +593,7 @@ class OpeningHours {
     );
   }
 
+  /// Serializes opening hours.
   Map<String, dynamic> toJson() {
     return {
       'open_now': openNow,
@@ -451,12 +603,18 @@ class OpeningHours {
   }
 }
 
+/// One open/close window inside [OpeningHours].
 class Period {
+  /// Closing clock time.
   final Time close;
+
+  /// Opening clock time.
   final Time open;
 
+  /// Creates an open/close pair.
   Period({required this.close, required this.open});
 
+  /// Parses `{open, close}`.
   factory Period.fromJson(Map<String, dynamic> json) {
     return Period(
       close: Time.fromJson(
@@ -468,6 +626,7 @@ class Period {
     );
   }
 
+  /// Serializes this period.
   Map<String, dynamic> toJson() {
     return {
       'close': close.toJson(),
@@ -476,12 +635,18 @@ class Period {
   }
 }
 
+/// Weekday plus `HHmm` clock time.
 class Time {
+  /// Day of week (0 = Sunday).
   final int day;
+
+  /// Local time as `HHmm`.
   final String time;
 
+  /// Creates a weekday clock time.
   Time({required this.day, required this.time});
 
+  /// Parses `{day, time}`.
   factory Time.fromJson(Map<String, dynamic> json) {
     return Time(
       day: (json['day'] as num?)?.toInt() ?? 0,
@@ -489,6 +654,7 @@ class Time {
     );
   }
 
+  /// Serializes day and clock time.
   Map<String, dynamic> toJson() {
     return {
       'day': day,
@@ -497,16 +663,33 @@ class Time {
   }
 }
 
+/// User review attached to [PlaceDetails].
 class Review {
+  /// Display name of the author.
   final String authorName;
+
+  /// Profile URL.
   final String authorUrl;
+
+  /// Review language code.
   final String language;
+
+  /// Avatar URL.
   final String profilePhotoUrl;
+
+  /// Star rating.
   final int rating;
+
+  /// Relative time label (`2 months ago`).
   final String relativeTimeDescription;
+
+  /// Review body.
   final String text;
+
+  /// Unix timestamp.
   final int time;
 
+  /// Creates a review.
   Review({
     required this.authorName,
     required this.authorUrl,
@@ -518,6 +701,7 @@ class Review {
     required this.time,
   });
 
+  /// Parses a review JSON object.
   factory Review.fromJson(Map<String, dynamic> json) {
     return Review(
       authorName: json['author_name'],
@@ -531,6 +715,7 @@ class Review {
     );
   }
 
+  /// Serializes this review.
   Map<String, dynamic> toJson() {
     return {
       'author_name': authorName,

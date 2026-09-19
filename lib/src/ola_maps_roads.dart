@@ -4,11 +4,13 @@ import 'package:ola_maps/src/utilities/rest_models.dart';
 
 /// Roads APIs: snap-to-road, nearest roads, and speed limits.
 class OlaMapsRoads {
+  /// Creates a roads client. Pass [http] to share language defaults.
   OlaMapsRoads({required String apiKey, OlaMapsHttp? http})
       : _http = http ?? OlaMapsHttp(apiKey: apiKey);
 
   final OlaMapsHttp _http;
 
+  /// Snaps GPS traces to the road network.
   Future<SnapToRoadResult> snapToRoad({
     required List<Location> points,
     bool enhancePath = false,
@@ -27,6 +29,7 @@ class OlaMapsRoads {
     return SnapToRoadResult.fromJson(Map<String, dynamic>.from(json as Map));
   }
 
+  /// Nearest road segment for each point.
   Future<List<NearestRoadResult>> nearestRoads({
     required List<Location> points,
     String mode = 'DRIVING',
@@ -51,6 +54,7 @@ class OlaMapsRoads {
         .toList();
   }
 
+  /// Posted speed limits along [points].
   Future<SpeedLimitsResult> speedLimits({
     required List<Location> points,
     String snapStrategy = 'snaptoroad',

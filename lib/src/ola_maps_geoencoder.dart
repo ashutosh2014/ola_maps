@@ -2,14 +2,22 @@ import 'package:ola_maps/src/ola_maps_http.dart';
 import 'package:ola_maps/src/utilities/enums.dart';
 import 'package:ola_maps/src/utilities/models.dart';
 
+/// Forward and reverse geocoding.
 class OlamapsGeoencoder {
+  /// Dashboard API key sent on each request.
   final String apiKey;
   late final OlaMapsHttp _http;
 
+  /// Places API origin used by geocode endpoints.
   final String placesApi = 'https://api.olamaps.io/places/v1';
+
+  /// Reverse-geocode path segment.
   final String reverseGeocode = '/reverse-geocode';
+
+  /// Forward-geocode path segment.
   final String geocode = '/geocode';
 
+  /// Creates a geocoder. Pass [httpClient] to share language defaults.
   OlamapsGeoencoder({required this.apiKey, OlaMapsHttp? httpClient})
       : _http = httpClient ?? OlaMapsHttp(apiKey: apiKey);
 

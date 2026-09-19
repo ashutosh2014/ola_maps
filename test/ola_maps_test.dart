@@ -28,6 +28,34 @@ void main() {
     expect(isOlaMapsApiKeyConfigured('abc123'), isTrue);
   });
 
+  test('backend tile proxy is detected from the tile URL path', () {
+    expect(usesOlaMapsBackendProxy(kOlaMapsDefaultTileUrl), isFalse);
+    expect(usesOlaMapsBackendProxy('https://api.example.com/styles.json'), isFalse);
+    expect(
+      usesOlaMapsBackendProxy(
+        'https://api.example.com/ola-maps/styles/default/style.json',
+      ),
+      isTrue,
+    );
+    expect(
+      olaMapsBackendProxyBase(
+        'https://api.example.com/ola-maps/styles/default/style.json',
+      ),
+      'https://api.example.com/ola-maps/proxy',
+    );
+    expect(
+      canCreateOlaMapView(apiKey: 'YOUR_API_KEY', tileUrl: kOlaMapsDefaultTileUrl),
+      isFalse,
+    );
+    expect(
+      canCreateOlaMapView(
+        apiKey: '',
+        tileUrl: 'https://api.example.com/ola-maps/style.json',
+      ),
+      isTrue,
+    );
+  });
+
   test('OlaMapsLanguage maps ISO codes and dynamic map styles', () {
     expect(OlaMapsLanguage.codeOf(null), 'en');
     expect(OlaMapsLanguage.codeOf(OlaMapsLanguage.hi), 'hi');

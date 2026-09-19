@@ -1,13 +1,17 @@
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:ola_maps/src/ola_maps_http.dart';
 import 'package:ola_maps/src/utilities/models.dart';
 
-/// Service for interacting with Ola Maps Routing API
+/// Directions, distance matrix, and fleet helpers for Ola Maps Routing.
 class OlaRoutingService {
+  /// Dashboard API key sent on each request.
   final String apiKey;
   late final OlaMapsHttp _http;
 
+  /// Creates a routing client. Pass [httpClient] to share language defaults.
   OlaRoutingService({required this.apiKey, OlaMapsHttp? httpClient})
       : _http = httpClient ?? OlaMapsHttp(apiKey: apiKey);
 
@@ -63,7 +67,9 @@ class OlaRoutingService {
           {'lat': destLat, 'lng': destLng},
         ];
       } else {
-        print('Routing API error: ${response.statusCode} - ${response.body}');
+        debugPrint(
+          'Routing API error: ${response.statusCode} - ${response.body}',
+        );
         // Return direct line on error
         return [
           {'lat': originLat, 'lng': originLng},
@@ -71,7 +77,7 @@ class OlaRoutingService {
         ];
       }
     } catch (e) {
-      print('Error fetching directions: $e');
+      debugPrint('Error fetching directions: $e');
       // Return direct line on error
       return [
         {'lat': originLat, 'lng': originLng},
@@ -123,6 +129,7 @@ class OlaRoutingService {
     return points;
   }
 
+  /// Full directions JSON (not decoded to lat/lng points).
   Future<Map<String, dynamic>> getDirectionsRaw({
     required Location origin,
     required Location destination,
@@ -152,6 +159,7 @@ class OlaRoutingService {
     return Map<String, dynamic>.from(json as Map);
   }
 
+  /// Travel times and distances between [origins] and [destinations].
   Future<Map<String, dynamic>> getDistanceMatrix({
     required List<Location> origins,
     required List<Location> destinations,
@@ -176,6 +184,7 @@ class OlaRoutingService {
     return Map<String, dynamic>.from(json as Map);
   }
 
+  /// Multi-stop route optimizer (`/routing/v1/routeOptimizer`).
   Future<Map<String, dynamic>> optimizeRoute(
     Map<String, dynamic> body, {
     Object? language,
@@ -192,6 +201,7 @@ class OlaRoutingService {
     return Map<String, dynamic>.from(json as Map);
   }
 
+  /// Fleet planner (`/routing/v1/fleetPlanner`).
   Future<Map<String, dynamic>> planFleet(
     Map<String, dynamic> body, {
     Object? language,

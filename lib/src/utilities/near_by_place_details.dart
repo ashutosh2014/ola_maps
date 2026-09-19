@@ -1,30 +1,81 @@
+/// Nearby Search row from Places.
 class NearByPlaceDetails {
+  /// Display label.
   final String description;
+
+  /// Query match ranges.
   final List<dynamic> matchedSubstrings;
+
+  /// Ola Maps place id.
   final String placeId;
+
+  /// Alternate place reference token.
   final String reference;
+
+  /// Bold/main and secondary labels.
   final StructuredFormatting structuredFormatting;
+
+  /// Tokenized description parts.
   final List<Term> terms;
+
+  /// Place-type tags.
   final List<String> types;
+
+  /// Map-data layers.
   final List<String> layer;
+
+  /// Distance from the search origin, in meters.
   final int? distanceMeters;
+
+  /// Opening hours JSON, if present.
   final Map<String, dynamic>? openingHours;
+
+  /// Business open/closed status.
   final String? businessStatus;
+
+  /// Maps URL.
   final String? url;
+
+  /// Local phone number.
   final String? formattedPhoneNumber;
+
+  /// International phone number.
   final String? internationalPhoneNumber;
+
+  /// Website URL.
   final String? website;
+
+  /// Photo metadata list.
   final List<dynamic> photos;
+
+  /// Average rating.
   final num? rating;
+
+  /// Amenities advertised by the place.
   final List<dynamic> amenitiesAvailable;
+
+  /// Wheelchair access flag.
   final dynamic wheelchairAccessibility;
+
+  /// Parking flag.
   final dynamic parkingAvailable;
+
+  /// Landmark classification flag.
   final dynamic isLandmark;
+
+  /// Landmark category.
   final String? landmarkType;
+
+  /// Accepted payment modes.
   final String? paymentMode;
+
+  /// Popular menu or catalog items.
   final List<dynamic> popularItems;
+
+  /// Languages spoken at the venue.
   final dynamic languageSpoken;
 
+  /// Creates a nearby-search row.
   NearByPlaceDetails({
     required this.description,
     required this.matchedSubstrings,
@@ -53,6 +104,7 @@ class NearByPlaceDetails {
     this.languageSpoken,
   });
 
+  /// Parses a nearby-search JSON object.
   factory NearByPlaceDetails.fromJson(Map<String, dynamic> json) {
     List<String> asStrings(dynamic value) {
       if (value is List) return value.map((item) => item.toString()).toList();
@@ -97,6 +149,7 @@ class NearByPlaceDetails {
     );
   }
 
+  /// Serializes this nearby row.
   Map<String, dynamic> toJson() {
     return {
       'description': description,
@@ -133,12 +186,21 @@ class NearByPlaceDetails {
   }
 }
 
+/// Primary and secondary labels for a prediction.
 class StructuredFormatting {
+  /// Bold / primary line.
   final String mainText;
+
+  /// Match ranges inside [mainText].
   final List<dynamic> mainTextMatchedSubstrings;
+
+  /// Secondary line (usually the address).
   final String secondaryText;
+
+  /// Match ranges inside [secondaryText].
   final List<dynamic> secondaryTextMatchedSubstrings;
 
+  /// Creates a formatted prediction label.
   StructuredFormatting({
     required this.mainText,
     required this.mainTextMatchedSubstrings,
@@ -146,6 +208,7 @@ class StructuredFormatting {
     required this.secondaryTextMatchedSubstrings,
   });
 
+  /// Parses `{main_text, secondary_text, …}`.
   factory StructuredFormatting.fromJson(Map<String, dynamic> json) {
     return StructuredFormatting(
       mainText: json['main_text']?.toString() ?? '',
@@ -156,6 +219,7 @@ class StructuredFormatting {
     );
   }
 
+  /// Serializes this label.
   Map<String, dynamic> toJson() {
     return {
       'main_text': mainText,
@@ -166,15 +230,21 @@ class StructuredFormatting {
   }
 }
 
+/// One token in a prediction description.
 class Term {
+  /// Start index in the description.
   final int offset;
+
+  /// Token text.
   final String value;
 
+  /// Creates a description term.
   Term({
     required this.offset,
     required this.value,
   });
 
+  /// Parses `{offset, value}`.
   factory Term.fromJson(Map<String, dynamic> json) {
     return Term(
       offset: (json['offset'] as num?)?.toInt() ?? 0,
@@ -182,6 +252,7 @@ class Term {
     );
   }
 
+  /// Serializes this term.
   Map<String, dynamic> toJson() {
     return {
       'offset': offset,

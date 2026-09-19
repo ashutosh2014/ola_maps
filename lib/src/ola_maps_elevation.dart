@@ -2,12 +2,15 @@ import 'package:ola_maps/src/ola_maps_http.dart';
 import 'package:ola_maps/src/utilities/models.dart';
 import 'package:ola_maps/src/utilities/rest_models.dart';
 
+/// Point elevation lookups.
 class OlaMapsElevation {
+  /// Creates an elevation client. Pass [http] to share language defaults.
   OlaMapsElevation({required String apiKey, OlaMapsHttp? http})
       : _http = http ?? OlaMapsHttp(apiKey: apiKey);
 
   final OlaMapsHttp _http;
 
+  /// Elevation at a single [location].
   Future<List<ElevationResult>> getElevation(
     Location location, {
     String? requestId,
@@ -22,6 +25,7 @@ class OlaMapsElevation {
     return _parse(json);
   }
 
+  /// Elevation at each of [locations].
   Future<List<ElevationResult>> getElevations(
     List<Location> locations, {
     String? requestId,

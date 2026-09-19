@@ -1,16 +1,35 @@
 import 'package:ola_maps/src/utilities/models.dart';
 
+/// One Places Autocomplete suggestion.
 class AutoCompleteResults {
+  /// Alternate place reference token.
   final String reference;
+
+  /// Place-type tags.
   final List<String> types;
+
+  /// Ranges inside [description] that matched the query.
   final List<MatchedSubstring> matchedSubstrings;
+
+  /// Distance from the bias location, in meters.
   final int? distanceMeters;
+
+  /// Tokenized description parts.
   final List<Term> terms;
+
+  /// Bold/main and secondary labels.
   final StructuredFormatting structuredFormatting;
+
+  /// Full suggestion text.
   final String description;
+
+  /// Coordinate when the API included geometry.
   final Location geometry;
+
+  /// Ola Maps place id.
   final String placeId;
 
+  /// Creates an autocomplete row.
   AutoCompleteResults({
     required this.reference,
     required this.types,
@@ -23,6 +42,7 @@ class AutoCompleteResults {
     required this.placeId,
   });
 
+  /// Parses an autocomplete prediction JSON object.
   factory AutoCompleteResults.fromJson(Map<String, dynamic> json) {
     List<String> asStrings(dynamic value) {
       if (value is List) return value.map((item) => item.toString()).toList();
@@ -56,6 +76,7 @@ class AutoCompleteResults {
     );
   }
 
+  /// Serializes this suggestion.
   Map<String, dynamic> toJson() {
     return {
       'reference': reference,
@@ -70,6 +91,7 @@ class AutoCompleteResults {
     };
   }
 
+  /// Reads `geometry.location`, flat `location`, or top-level lat/lng.
   static Location locationFromPrediction(Map<String, dynamic> json) {
     Map<String, dynamic>? loc;
     final geometry = json['geometry'];
@@ -101,15 +123,21 @@ class AutoCompleteResults {
   }
 }
 
+/// Character range that matched an autocomplete query.
 class MatchedSubstring {
+  /// Start index in the description.
   final int offset;
+
+  /// Match length.
   final int length;
 
+  /// Creates a match range.
   MatchedSubstring({
     required this.offset,
     required this.length,
   });
 
+  /// Parses `{offset, length}`.
   factory MatchedSubstring.fromJson(Map<String, dynamic> json) {
     return MatchedSubstring(
       offset: (json['offset'] as num?)?.toInt() ?? 0,
@@ -117,6 +145,7 @@ class MatchedSubstring {
     );
   }
 
+  /// Serializes this range.
   Map<String, dynamic> toJson() {
     return {
       'offset': offset,

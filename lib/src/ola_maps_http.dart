@@ -9,13 +9,20 @@ import 'package:ola_maps/src/utilities/ola_maps_language.dart';
 
 /// Shared HTTP helper for Ola Maps REST APIs (`https://api.olamaps.io`).
 class OlaMapsHttp {
+  /// Default REST origin (`https://api.olamaps.io`).
   static const defaultBaseUrl = 'https://api.olamaps.io';
 
+  /// Dashboard API key appended as `api_key`.
   final String apiKey;
+
+  /// REST origin. Defaults to [defaultBaseUrl].
   final String baseUrl;
+
+  /// ISO 639-1 code applied when a call omits `language`.
   final String? defaultLanguage;
   final http.Client _client;
 
+  /// Creates a shared HTTP client for Places, Routing, and related APIs.
   OlaMapsHttp({
     required this.apiKey,
     this.baseUrl = defaultBaseUrl,
@@ -67,6 +74,7 @@ class OlaMapsHttp {
     return OlaMapsLanguage.codeOf(defaultLanguage);
   }
 
+  /// Copies [query] and sets `language` from [language] or [defaultLanguage].
   Map<String, dynamic> withLanguage(
     Map<String, dynamic> query, {
     Object? language,
@@ -79,11 +87,13 @@ class OlaMapsHttp {
     return query;
   }
 
+  /// Same as [withLanguage] for a JSON map body.
   Object? withLanguageBody(Object? body, {Object? language}) {
     if (body is! Map) return body;
     return withLanguage(Map<String, dynamic>.from(body), language: language);
   }
 
+  /// GET [path] and decode JSON.
   Future<dynamic> getJson(
     String path, {
     Map<String, dynamic>? query,
@@ -97,6 +107,7 @@ class OlaMapsHttp {
     return _decode(response);
   }
 
+  /// POST, PUT, or DELETE [path] with an optional JSON [body].
   Future<dynamic> sendJson(
     String method,
     String path, {
@@ -126,6 +137,7 @@ class OlaMapsHttp {
     return _decode(response);
   }
 
+  /// GET [path] and return the raw body (static maps).
   Future<Uint8List> getBytes(
     String path, {
     Map<String, dynamic>? query,
@@ -179,6 +191,7 @@ class OlaMapsHttp {
     }
   }
 
+  /// Random `X-Request-Id` value.
   static String uuidV4() {
     final random = Random.secure();
     final bytes = List<int>.generate(16, (_) => random.nextInt(256));
@@ -191,6 +204,7 @@ class OlaMapsHttp {
     return '${hex(0, 4)}-${hex(4, 6)}-${hex(6, 8)}-${hex(8, 10)}-${hex(10, 16)}';
   }
 
+  /// Encodes points as `lat,lng|lat,lng` for Roads / Routing query params.
   static String encodePoints(Iterable<Location> points) {
     return points.map((point) => '${point.lat},${point.lng}').join('|');
   }

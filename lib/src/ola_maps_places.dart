@@ -4,17 +4,28 @@ import 'package:ola_maps/src/utilities/exceptions.dart';
 import 'package:ola_maps/src/utilities/models.dart';
 import 'package:ola_maps/src/utilities/rest_models.dart';
 
+/// Places HTTP helpers: search, details, nearby, autocomplete, photos.
 class OlaMapsPlaces {
+  /// Dashboard API key sent on each request.
   String apiKey;
   late final OlaMapsHttp _http;
 
+  /// Places API origin.
   final String placesApi = 'https://api.olamaps.io/places/v1';
 
+  /// Text-search path segment.
   final String textsearch = '/textsearch';
+
+  /// Place-details path segment.
   final String details = '/details';
+
+  /// Nearby-search path segment.
   final String nearbysearch = '/nearbysearch';
+
+  /// Autocomplete path segment.
   final String autocomplete = '/autocomplete';
 
+  /// Creates a Places client. Pass [httpClient] to share language defaults.
   OlaMapsPlaces({required this.apiKey, OlaMapsHttp? httpClient})
       : _http = httpClient ?? OlaMapsHttp(apiKey: apiKey);
 
@@ -89,6 +100,7 @@ class OlaMapsPlaces {
     throw ApiException(map['error_message']?.toString() ?? 'Place not found');
   }
 
+  /// Place Details with the advanced payload.
   Future<PlaceDetails> getAdvancedPlaceDetails({
     required String placeId,
     Object? language,
@@ -158,6 +170,7 @@ class OlaMapsPlaces {
         .toList();
   }
 
+  /// Nearby search using the advanced payload.
   Future<List<NearByPlaceDetails>> getAdvancedNearbySearchPlaces({
     required Location location,
     List<String> types = const [],
@@ -231,6 +244,7 @@ class OlaMapsPlaces {
         .toList();
   }
 
+  /// Validates and normalizes a postal [address].
   Future<AddressValidationResult> validateAddress(
     String address, {
     String? requestId,
@@ -247,6 +261,7 @@ class OlaMapsPlaces {
     );
   }
 
+  /// Photo metadata for [photoReference].
   Future<List<PlacePhoto>> getPhoto(
     String photoReference, {
     String? requestId,

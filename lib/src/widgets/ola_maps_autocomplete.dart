@@ -1,9 +1,10 @@
 import 'package:animated_custom_dropdown/custom_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:ola_maps/ola_maps_api.dart';
-import 'package:ola_maps/src/utilities/auto_complete_results.dart';
 
+/// Search-as-you-type Places Autocomplete dropdown.
 class OlaMapsAutocomplete extends StatelessWidget {
+  /// Builds a dropdown that calls Places Autocomplete.
   const OlaMapsAutocomplete({
     super.key,
     this.canCloseOutsideBounds = true,
@@ -104,6 +105,7 @@ class OlaMapsAutocomplete extends StatelessWidget {
   /// The [headerBuilder] that will be used to build [CustomDropdown] header field.
   final Widget Function(BuildContext, AutoCompleteResults, bool)? headerBuilder;
 
+  /// Custom row builder for each suggestion.
   final Widget Function(
     BuildContext context,
     AutoCompleteResults item,

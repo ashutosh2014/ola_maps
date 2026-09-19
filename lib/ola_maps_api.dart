@@ -26,18 +26,37 @@ export 'src/utilities/ola_maps_language.dart';
 class Olamaps {
   static Olamaps? _instance;
 
+  /// Shared REST client. Call [initialize] once before using the services.
   static Olamaps get instance => _instance ??= Olamaps();
 
+  /// Forward and reverse geocoding.
   late OlamapsGeoencoder geoencoder;
+
+  /// Autocomplete, place details, nearby, and photos.
   late OlaMapsPlaces places;
+
+  /// Snap-to-road, nearest roads, and speed limits.
   late OlaMapsRoads roads;
+
+  /// Geofence CRUD against an Ola Maps project.
   late OlaMapsGeofence geofence;
+
+  /// Point elevation lookups.
   late OlaMapsElevation elevation;
+
+  /// Static maps and style URLs.
   late OlaMapsTiles tiles;
+
+  /// Street View metadata helpers.
   late OlaMapsStreetView streetView;
+
+  /// Directions, distance matrix, and related routing calls.
   late OlaRoutingService routing;
+
+  /// Default ISO 639-1 language applied to HTTP helpers.
   String language = OlaMapsLanguage.defaultCode;
 
+  /// Configures every REST client with [apiKey] and optional [language].
   void initialize(
     String apiKey, {
     Object? language,
