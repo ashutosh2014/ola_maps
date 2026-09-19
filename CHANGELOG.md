@@ -1,3 +1,10 @@
+## 0.3.4
+
+* Documented the public API (map types, controller, REST models, language codes) so pub.dev documentation coverage exceeds 20%.
+* Split `ola_map_view_flutter.dart` into map models, auth/proxy helpers, controller, and view modules (same public exports).
+* Detect backend tile proxies with `usesOlaMapsBackendProxy` / `canCreateOlaMapView` instead of a raw `/ola-maps/` path check.
+* Replaced production `print` calls with `debugPrint` and dropped the named `library ola_maps` directive so `flutter analyze lib` is clean.
+
 ## 0.3.3
 
 * Use absolute GitHub image URLs in the README so screenshots render on pub.dev (relative paths are stripped until repository verification finishes).
